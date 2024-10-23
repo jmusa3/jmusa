@@ -1,0 +1,1912 @@
+---
+title: 'Framingham Heart Study: Risk of Coronary Heart Disease & Factor Association Analysis using a Data Subset'
+author: "Joanne Musa"
+date: "October 23, 2024"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 24px;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+  font-weight: bold;
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 20px;
+  font-family: system-ui;
+  color: DarkRed;
+  text-align: center;
+  font-weight: bold;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 18px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+}
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: center;
+    font-weight: bold;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 20px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+    font-weight: bold;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+
+if (!require("MASS")) {
+   install.packages("MASS")
+   library(MASS)
+}
+if (!require("leaflet")) {
+   install.packages("leaflet")
+   library(leaflet)
+}
+
+if (!require("ggridges")) {
+   install.packages("ggridges")
+library(ggridges)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+
+if (!require("ggplot2")) {
+   install.packages("ggplot2")
+   library(ggplot2)
+}
+if (!require("nnet")) {
+   install.packages("nnet")
+   library(nnet)
+}
+ 
+if (!require("nortest")) {
+   install.packages("nortest")
+   library(nortest)
+} 
+
+if (!require("pROC")) {
+   install.packages("pROC")
+   library(pROC)
+} 
+
+if (!require("corrplot")) {
+   install.packages("corrplot")
+   library(corrplot)
+} 
+
+if (!require("patchwork")) {
+   install.packages("patchwork")
+   library(patchwork)
+} 
+
+if (!require("car")) {
+   install.packages("car")
+   library(car)
+} 
+
+if (!require("gridExtra")) {
+   install.packages("gridExtra")
+   library(gridExtra)
+} 
+
+if (!require("ggmosaic")) {
+   install.packages("ggmosaic")
+   library(ggmosaic)
+} 
+
+if (!require("ResourceSelection")) {
+   install.packages("ResourceSelection")
+   library(ResourceSelection)
+}
+
+if (!require("reshape2")) {
+   install.packages("reshape2")
+   library(reshape2)
+} 
+
+if (!require("lattice")) {
+   install.packages("lattice")
+   library(lattice)
+} 
+
+if (!require("tinytex")) {
+   install.packages("tinytex")
+   library(tinytex)
+} 
+
+if (!require("vcd")) {
+   install.packages("vcd")
+   library(vcd)
+} 
+
+if (!require("caret")) {
+   install.packages("caret")
+   library(caret)
+}
+
+
+
+knitr::opts_chunk$set(
+                      echo = TRUE,   
+                      warning = FALSE,  
+                      result = TRUE,    
+                      message = FALSE,
+                      comment = NA
+                      )  
+```
+
+# INTRODUCTION
+
+The Framingham Heart study started in 1948 to identify factors or characteristics that contribute to cardiovascular disease. The study is based in Massachusetts and has followed multiple generations of participants. The study is a longitudinal design that collects data via examinations and health assessments. As well, participants undergo medical evaluations, laboratory tests, and lifestyle assessments. Some of these risk factors are behavioral and some are biological. This analysis considers a data subset of the Framingham Heart Study. 
+
+
+This analysis will examine the association of some of the variables that are associated with diabetes and smoking. As well, investigation into how some of these factors predict the likelihood of developing coronary heart disease within ten years among participants in the Framingham Heart Study will be conducted. 
+
+
+# FRAMINGHAM DATA SUBSET
+
+## Description of Data
+
+
+The Framingham Heart Study includes data from about 15,000 participants and over 1,000 variables. The data set used for this analysis is a subset containing 4240 observations and 16 variables. Of the 16 variables, 8 variables are factor variables and 7 are numeric variables. 
+
+The list of variable names and their description/definitions in this data subset is listed below.
+
+1. sex (factor): the sex of the observations. The variable is a binary named “male” in the dataset. 
+2. age (numerical): Age at the time of medical examination in years.
+3. education (factor): A categorical variable of the participants education, with the levels: Some high school (1), high      school/GED (2), some college/vocational school (3), college (4) 
+4. currentSmoker (factor): Current cigarette smoking at the time of examinations 
+5. cigsPerDay (numerical): Number of cigarettes smoked each day 
+6. BPmeds (factor): Use of Anti-hypertensive medication at exam 
+7. prevalentStroke (factor): Prevalent Stroke (0 = free of disease) 
+8. prevalentHyp (factor): Prevalent Hypertensive. Subject was defined as hypertensive if treated 
+9. diabetes (factor): Diabetic according to criteria of first exam treated 
+10. totChol (numerical): Total cholesterol (mg/dL) 
+11. sysBP (numerical): Systolic Blood Pressure (mmHg) 
+12. diaBP (numerical): Diastolic blood pressure (mmHg) 
+13. BMI (numerical): Body Mass Index, weight (kg)/height (m)^2 
+14. heartRate (numerical): Heart rate (beats/minute) 
+15. glucose (numerical): Blood glucose level (mg/dL) 
+16. TenYearCHD (factor, response variable): The 10 year risk of coronary heart disease(CHD).
+
+```{r}
+
+heartdata <- read.csv("https://raw.githubusercontent.com/jmusa3/jmusa/refs/heads/main/FraminghamHeartStudy.csv")
+
+
+# Convert some variables to factors
+heartdata <- heartdata %>%
+  mutate(
+    male = as.factor(male),
+    education = as.factor(education),
+    currentSmoker = as.factor(currentSmoker),
+    BPMeds = as.factor(BPMeds),
+    prevalentStroke = as.factor(prevalentStroke),
+    prevalentHyp = as.factor(prevalentHyp),
+    diabetes = as.factor(diabetes),
+    TenYearCHD = as.factor(TenYearCHD)
+  )
+summary(heartdata)
+
+# Find the total number of observations (rows) in heartdata
+#total_observations <- nrow(heartdata)
+#total_observations
+
+# Find number of observations that have at least one missing value
+#missing_rows <- apply(heartdata, 1, function(x) any(is.na(x)))
+
+#sum(missing_rows)
+```
+
+Table 1. Summary statistics for the 16 variables in the Framingham Heart Study subset. Seven of the variables have missing values. Male, education, currentSmoker, BPMeds, prevalentSmoker, prevalentHyp, diabetes, and TenYearCHD were converted to factor variables. 
+
+
+## Missing Values
+
+The data subset contained missing values. Table 2 displays the counts for missing values. There were 105 missing values for education, 29 missing values for cigsPerDay, 53 missing values for BPMeds, 50 missing values for totChol, 19 missing values for BMI, 1 missing value for heartRate, and 388 missing values for glucose. Of the 4,240 observations in this data subset, 582 observations had at least one missing value. 
+
+Several steps were taken to impute missing values.
+
+```{r}
+
+# Count missing values for each variable 
+missing_values <- colSums(is.na(heartdata))
+
+# Display the result
+print(missing_values)
+
+#education has 105, cigsPerDay has 29, totChol has 50, BPMeds has 53, BMI has 19, heartRate has 1, glucose has 388 missing values
+
+#number of rows before subsetting
+#num_observations <- nrow(heartdata)
+#print(num_observations)
+#ds has 4240 rows
+
+
+```
+Table 2. A count of missing values by variables. 
+
+
+First, the data was subsetted to include the 3,658 complete observations. From the complete data set, a multinomial regression model was created. The model then predicted values and imputed these predicted values for missing education data in the original data set. After this process was completed, there were 3,744 observations with no missing values. 
+
+
+```{r}
+
+# Subset the dataset to remove rows with any missing values to create regression models for missing values
+
+heart_clean <- na.omit(heartdata)
+
+# Display the cleaned dataset
+#print(heart_clean)
+
+#number of rows after subsetting
+#num_observations <- nrow(heart_clean)
+#print(num_observations)
+
+
+#MULTINOMIAL REGRESSION FOR EDUCATION MISSING VALUES 
+
+# Convert education to a factor
+heart_clean$education <- as.factor(heart_clean$education)
+
+# Check for missing values in education
+#table(is.na(heart_clean$education))
+
+# Fit the multinomial logistic regression model
+model_multinomial <- multinom(education ~ age + male + glucose + cigsPerDay, data = heart_clean)
+
+# Summary of the model
+summary(model_multinomial)
+
+# Get the coefficients
+coef(model_multinomial)
+
+# Calculate odds ratios
+odds_ratios <- exp(coef(model_multinomial))
+odds_ratios
+
+# Create a logical vector to identify missing education values
+missing_rows <- is.na(heartdata$education)
+
+# Create newdata for prediction (only include rows without missing education values)
+newdata <- heartdata[!missing_rows,]
+
+# Predict education levels
+predicted_classes <- predict(model_multinomial, newdata = newdata)
+
+# Fill in the missing education values in heartdata
+heartdata$education[missing_rows] <- predicted_classes
+
+# View the updated heartdata
+#head(heartdata)
+#summary(heartdata)
+
+#no missing values for education
+```
+
+Second, a logistic regression model was created used the complete data set to predict BPMeds. The model was used to impute the missing BPMeds data in the original data set. 
+
+
+```{r}
+
+#LOGISTICAL REGRESSION TO IMPUTE MISSING BPMEDS
+
+# Step 1: Identify missing rows in BPMeds
+missing_rows <- is.na(heartdata$BPMeds)
+
+# Step 2: Create newdata for prediction (only include rows without missing BPMeds)
+# Use complete cases for fitting the model from heart_clean
+complete_cases <- heart_clean[!is.na(heart_clean$BPMeds), ]
+
+# Step 3: Fit the logistic regression model (assuming you have relevant predictors)
+model_logistic <- glm(BPMeds ~ age + male + prevalentHyp + sysBP + diaBP, 
+                      data = complete_cases, 
+                      family = binomial())
+
+# Step 4: Predict for all cases in heartdata including the missing ones
+# Use heartdata for prediction, ensuring it includes all relevant predictors
+predicted_probs <- predict(model_logistic, newdata = heartdata, type = "response")
+
+# Step 5: Classify probabilities into classes (0 or 1)
+predicted_classes <- ifelse(predicted_probs > 0.5, 1, 0)
+
+# Step 6: Fill in the missing BPMeds values using the predictions
+# Make sure you only fill in the missing values
+heartdata$BPMeds[missing_rows] <- predicted_classes[missing_rows]
+
+# Step 7: Check the results
+#head(heartdata)
+#cat("Remaining missing values in BPMeds:", sum(is.na(heartdata$BPMeds)), "\n")
+
+#summary(heartdata)
+
+#END LOGISTIC REGRESSION
+
+```
+
+
+Third, regression models were then created from the completed data to predict missing values for cigsPerDay, heartRate, BMI, and glucose. 
+
+Since systolic blood pressure is linearly correlated with BMI (Figure A), a model was created to predict the missing values for BMI using the log of systolic blood pressure as the predictor. 
+
+```{r}
+
+# Step 1: Set the seed for reproducibility
+set.seed(123)
+
+# Step 2: Generate a 10% bootstrap sample from heart_clean
+sample_size <- floor(0.1 * nrow(heart_clean))  # 10% of the data
+bootstrap_sample <- heart_clean[sample(1:nrow(heart_clean), size = sample_size, replace = TRUE), ]
+
+# Step 3: Create a scatter plot for BMI and sysBP in the bootstrap sample
+library(ggplot2)
+ggplot(bootstrap_sample, aes(x = sysBP, y = BMI)) +
+  geom_point() +
+  labs(title = "Scatterplot of BMI vs systolic Blood Pressure (10% Bootstrap Sample)",
+       x = "Systolic Blood Pressure",
+       y = "BMI") +
+  theme_minimal()
+
+# Q-Q Plot for systolic BP
+ggplot(bootstrap_sample, aes(sample = sysBP)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+  labs(title = "Q-Q Plot of Systolic Blood Pressure (Bootstrap Sample)",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal()
+
+# Step 1: Build the linear regression model to predict log(BMI) based on log(sysBP)
+model_BMI <- lm(log(BMI) ~ log(sysBP), data = heart_clean)
+
+# Step 2: Check the summary of the model
+summary(model_BMI)
+
+# Step 3: Identify rows with missing BMI values in heartdata
+missing_BMI_rows <- is.na(heartdata$BMI)
+
+# Step 4: Predict log-transformed BMI values for missing rows
+predicted_log_BMI <- predict(model_BMI, newdata = heartdata[missing_BMI_rows, ])
+
+# Step 5: Exponentiate the predicted log(BMI) values to get predictions in the original BMI scale
+predicted_BMI <- exp(predicted_log_BMI)
+
+# Step 6: Impute the predicted BMI values into the missing positions in heartdata
+heartdata$BMI[missing_BMI_rows] <- predicted_BMI
+
+# Step 7: Check the imputed values
+summary(heartdata$BMI)
+
+
+
+```
+Figure A. The bootstrap scatterplot of BMI and systolic blood pressure displays a moderate linear relationship. The QQ plot indicates that the distribution of systolic blood pressure is not normal. Hence, the log of systolic blood pressure is used as the predictor. 
+
+
+Glucose and BMI are linearly correlated (Figure B). Therefore, a model using log of BMI to predict glucose was created to impute missing glucose data. 
+
+```{r}
+
+#REGRESSION: IMPUTE MISSING GLUCOSE USING BMI AS A PREDICTOR
+
+#BOOTSTRAP SAMPLE & SCATTERPLOT FOR GLUCOSE AND BMI TO ASSESS LINEAR RELATIONSHIP
+
+# Step 1: Set the seed for reproducibility
+set.seed(567)
+
+# Step 2: Generate a smaller bootstrap sample (e.g., 1% of the original size)
+sample_size <- floor(0.1 * nrow(heart_clean))  
+bootstrap_sample_small <- heart_clean[sample(1:nrow(heart_clean), size = sample_size, replace = TRUE), ]
+
+
+# Step 3: Create a scatterplot for the bootstrap sample
+ggplot(bootstrap_sample_small, aes(x = BMI, y = glucose)) +
+  geom_point() +
+  labs(title = "Scatterplot of Glucose vs BMI (Bootstrap Sample)",
+       x = "BMI",
+       y = "Glucose") +
+  theme_minimal()
+
+qqnorm(bootstrap_sample_small$BMI, main = "Q-Q Plot for BMI (Bootstrap Sample)")
+qqline(bootstrap_sample_small$BMI, col = "red")
+
+
+# Step 1: Remove any observations with ANY missing values
+heartdata_clean2 <- na.omit(heartdata)
+
+# Step 2: Fit a linear regression model to predict log(glucose) based on log(BMI) using the cleaned dataset
+glucose_model <- lm(log(glucose) ~ log(BMI), data = heartdata_clean2)
+
+# Step 3: Check the summary of the model
+summary(glucose_model)
+
+# Step 4: Identify rows with missing glucose values in heartdata
+missing_glucose_rows <- is.na(heartdata$glucose)
+
+# Step 5: Predict log-transformed glucose values for missing rows
+predicted_log_glucose <- predict(glucose_model, newdata = heartdata[missing_glucose_rows, ])
+
+# Step 6: Exponentiate the predicted log(glucose) values to get predictions in the original scale
+predicted_glucose <- exp(predicted_log_glucose)
+
+# Step 7: Impute the predicted glucose values into the missing positions in heartdata
+heartdata$glucose[missing_glucose_rows] <- predicted_glucose
+
+# Step 8: Check the imputed values
+summary(heartdata$glucose)
+
+```
+Figure B. A moderate relationship between BMI and glucose is visualized in the scatterplot. Since BMI is not normally distributed (QQ Plot), the log of BMI will be used as a predictor for glucose. 
+
+
+Systolic blood pressure is moderately correlated with total cholesterol. Therefore, a model to predict the missing total cholesterol values was created using systolic blood pressure as a predictor. 
+
+
+```{r}
+
+# Step 1: Set the seed for reproducibility
+set.seed(123)
+
+# Step 2: Generate a 10% bootstrap sample from heart_clean
+sample_size <- floor(0.1 * nrow(heart_clean))  # 10% of the data
+bootstrap_sample <- heart_clean[sample(1:nrow(heart_clean), size = sample_size, replace = TRUE), ]
+
+# Step 3: Create a scatter plot for totChol and sysBP in the bootstrap sample
+library(ggplot2)
+ggplot(bootstrap_sample, aes(x = totChol, y = sysBP)) +
+  geom_point() +
+  labs(title = "Scatterplot of Total Cholesterol vs Systolic Blood Pressure (10% Bootstrap Sample)",
+       x = "Total Cholesterol",
+       y = "Systolic Blood Pressure") +
+  theme_minimal()
+
+
+# Step 1: Build the linear regression model using log(sysBP) to predict totChol
+model_totChol <- lm(log(totChol) ~ log(sysBP), data = heart_clean)
+
+# Step 2: Check the summary of the model
+summary(model_totChol)
+
+# Step 3: Identify rows with missing totChol values in heartdata
+missing_totChol_rows <- is.na(heartdata$totChol)
+
+# Step 4: Predict log-transformed totChol values for missing rows
+predicted_log_totChol <- predict(model_totChol, newdata = heartdata[missing_totChol_rows, ])
+
+# Step 5: Exponentiate the predicted log(totChol) values to get predictions in the original scale
+predicted_totChol <- exp(predicted_log_totChol)
+
+# Step 6: Impute the predicted totChol values into the missing positions in heartdata
+heartdata$totChol[missing_totChol_rows] <- predicted_totChol
+
+# Step 7: Check the imputed values
+summary(heartdata$totChol)
+
+
+
+
+```
+Figure C. The scatterplot displays a slight correlation between systolic blood pressure and total cholesterol. Systolic blood pressure is not normally distributed (Figure A)
+
+
+Fourth, cigarettes per day had 29 missing values. Of the 29 missing values, all individuals were current smokers. The mean number of cigarettes per day was imputed for these missing values.  
+
+
+```{r}
+
+
+# Step 1: Calculate the mean of cigsPerDay, excluding missing values (NA)
+mean_cigsPerDay <- mean(heartdata$cigsPerDay, na.rm = TRUE)
+
+# Step 2: Impute the missing cigsPerDay values with the calculated mean
+heartdata$cigsPerDay[is.na(heartdata$cigsPerDay)] <- mean_cigsPerDay
+
+
+```
+
+Last, the data subset still had 1 missing value for heartRate. Since the frequency of this single missing value is very low, the missing value was imputed with the average. The final data set had zero missing values. 
+
+```{r}
+# Step 1: Impute missing heartRate values with the average heartRate
+mean_heartRate <- mean(heartdata$heartRate, na.rm = TRUE)
+heartdata$heartRate[is.na(heartdata$heartRate)] <- mean_heartRate
+
+
+```
+
+# EDA
+
+## Single Variables
+
+All of the variables in this data set were typed as numerical. In turn, indicator variables were changed to factor. For visualization, "male" was changed to "sex". The indicator values for the categorical variables were changed to descriptive words or phrases to enhance readability of the graphs. 
+
+
+```{r}
+
+# Rename heartdatato heartviz for visualizing data
+
+heartviz <- heartdata
+
+summary(heartviz)
+
+# Rename the variable 'male' to 'sex'
+heartviz <- heartdata %>%
+  rename(sex = male)
+
+#colnames(heartviz)
+
+# Check the unique values in the sex column
+#unique(heartviz$sex)
+
+# Change values of sex from 1 and 0 to male and female
+heartviz$sex <- ifelse(heartviz$sex == 1, "male", 
+                            ifelse(heartviz$sex == 0, "female", heartviz$sex))
+
+#glimpse(heartviz)
+
+# Count occurrences of males and females
+sex_count <- table(heartviz$sex)
+
+# View the count
+#print(sex_count)
+
+
+```
+
+
+
+```{r}
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = sex)) +
+   geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "lightblue") + 
+  labs(title = "Sex Distribution", x = "Sex", y = "Percent") +
+  theme_minimal()
+
+```
+Figure D. The distribution of sex indicates that there are more female data than male data that exists in this data subset. Specifically, there are 2,420 females and 1,820 males included in this data set. 
+
+
+```{r}
+
+# Recode education variable as a factor with labels
+heartviz <- heartviz %>%
+  mutate(education = factor(education,
+                            levels = c(1, 2, 3, 4),
+                            labels = c("Some HS", "HS/GED", "Some College/Vocational School", "College")))
+
+# Filter out any missing values for education
+heartviz <- heartviz %>% filter(!is.na(education))
+
+# Calculate the percentage for each education level
+education_dist <- heartviz %>%
+  group_by(education) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = (count / sum(count)) * 100)
+
+print(education_dist)
+
+# Create the bar chart using the pre-calculated percentages
+ggplot(education_dist, aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", fill = "gold") +
+  labs(title = "Distribution of Education Levels", 
+       x = "Education Level", 
+       y = "Percentage") +
+  theme_minimal()
+```
+
+Figure E. The most prevalent education level for the participants in this study is some high school, followed by a high school diploma or GED. The least prevalent education attainment is college degree. 
+
+
+
+
+```{r}
+
+# Change values of currentSmoker
+heartviz <- heartviz %>%
+  mutate(currentSmoker = ifelse(currentSmoker == 1, "Yes", 
+                                 ifelse(currentSmoker == 0, "No", currentSmoker)))
+
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = currentSmoker)) +
+    geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "orange") + 
+  labs(title = "Current Smoker", x = "Smoke", y = "Percent") +
+  theme_minimal()
+
+```
+Figure F. The relative frequencies of smokers and non-smokers are almost the same. There were 2,145 participant who were active smokers, which is slightly more than the 2,095 participants who were not active smokers. 
+
+
+
+```{r}
+
+# Change values of BPMeds
+heartviz <- heartviz %>%
+  mutate(BPMeds = ifelse(BPMeds == 1, "Yes", 
+                                 ifelse(BPMeds == 0, "No", BPMeds)))
+
+heartviz <- heartviz[!is.na(heartviz$BPMeds), ]  
+
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = BPMeds)) +
+    geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "darkgreen") + 
+  labs(title = "Blood Pressure Medication", x = "BP Medication", y = "Percent") +
+  theme_minimal()
+
+```
+Figure G. About 97% of participants were not on blood pressure medication at the time of this study. 
+
+
+
+```{r}
+heartviz <- heartviz %>%
+  mutate(prevalentStroke = ifelse(prevalentStroke == 1, "Yes", 
+                                 ifelse(prevalentStroke == 0, "No", prevalentStroke)))
+  
+
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = prevalentStroke)) +
+  geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "violet") + 
+  labs(title = "Prevalent Stroke", x = "Prevalent Stroke", y = "Percent") +
+  theme_minimal()
+
+```
+Figure H. Very few participants, less than 0.6%, had a stroke. 
+
+```{r}
+heartviz <- heartviz %>%
+  mutate(prevalentHyp = ifelse(prevalentHyp == 1, "Yes", 
+                                 ifelse(prevalentHyp == 0, "No", prevalentHyp)))
+  
+
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = prevalentHyp)) +
+  geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "royalblue") + 
+  labs(title = "Prevalent Hypertensive", x = "Prevalent Hypertensive", y = "Percent") +
+  theme_minimal()
+
+```
+Figure I. About 31% of participants had received treatment for hypertension.
+
+```{r}
+heartviz <- heartviz %>%
+  mutate(diabetes = ifelse(diabetes == 1, "Yes", 
+                                 ifelse(diabetes == 0, "No", diabetes)))
+  
+
+# Create a bar chart using ggplot2
+ggplot(heartviz, aes(x = diabetes)) +
+  geom_bar(aes(y = (after_stat(count) / sum(after_stat(count))) * 100), fill = "brown") + 
+  labs(title = "Diabetes", x = "Diabetes", y = "Percent") +
+  theme_minimal()
+
+```
+Figure J. Diabetes was infrequent, about 2.6%, among the participants of this study.
+
+
+```{r}
+
+#Histogram for age
+ggplot(heartviz, aes(x = age)) + 
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "blue", color = "black", alpha = 0.5) + 
+  geom_density(color = "red", size = 1) + 
+  labs(title = "Histogram of Age", 
+       x = "Age", 
+       y = "Density") +
+  theme_minimal()
+```
+Figure K. The age distribution varies from slightly over 30 years of age to about 70 years old. A slight skewness to the right is apparent. The typical age of a participant is about 50 years old. 
+
+
+
+```{r}
+
+
+# Create a copy of the heartdata data set
+heartdataCHD <- heartdata
+# Recode TenYearCHD in heartdataCHD
+heartdataCHD$TenYearCHD <- ifelse(heartdataCHD$TenYearCHD == 1, "Yes", "No")
+
+# Create the bar chart
+ggplot(heartdataCHD, aes(x = TenYearCHD)) +
+  geom_bar(aes(y = (..count..) / sum(..count..)), fill = "forestgreen", color = "black") +
+  scale_y_continuous(labels = function(x) paste0(round(x * 100, 1), "%")) +
+  labs(title = "Ten-Year Coronary Heart Disease (CHD) Outcomes",
+       x = "Ten-Year CHD", y = "Percentage") +
+  theme_minimal()
+
+```
+Figure L. Less than 20% of participants developed CHD within ten years of their initial examination. 
+
+
+```{r}
+# Create a density plot for cigsPerDay using ggplot2
+ggplot(data = heartdata, aes(x = cigsPerDay)) + 
+  geom_density(na.rm = TRUE, fill = "blue", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "Density Curve for Cigarettes Per Day", 
+       x = "Cigarettes Per Day", 
+       y = "Density")
+
+```
+Figure M. The density curve for the number of cigarettes per day is multi-modal. The distribution has an overall skewed right shape. The mean number of cigarettes per day is nine, which is greater than the median number of cigarettes per day of zero. The number of cigarettes per day varies from 0 to 70 and has an IQR of 20.
+
+
+```{r}
+
+# Create a density plot for totChol using ggplot2
+ggplot(data = heartdata, aes(x = totChol)) + 
+  geom_density(na.rm = TRUE, fill = "purple", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "1. Density Curve for Total Cholesterol", 
+       x = "Cholesterol", 
+       y = "Density")
+
+# Calculate the mean and standard deviation of totChol
+mean_totChol <- mean(heartdata$totChol, na.rm = TRUE)
+sd_totChol <- sd(heartdata$totChol, na.rm = TRUE)
+
+# Create a density plot for totChol and overlay a normal curve
+ggplot(data = heartdata, aes(x = totChol)) + 
+  geom_density(na.rm = TRUE, fill = "purple", alpha = 0.5) +  # Density curve
+  stat_function(fun = dnorm, args = list(mean = mean_totChol, sd = sd_totChol), 
+                color = "red", linetype = "dashed", size = 1) +  # Normal curve
+  labs(title = "2. Density Curve for Total Cholesterol with Normal Curve", 
+       x = "Cholesterol", 
+       y = "Density") +
+  theme_minimal()
+
+# Perform Shapiro-Wilk test for normality
+shapiro_test_result <- shapiro.test(heartdata$totChol)
+
+# Print the test result
+shapiro_test_result
+
+# Create a box plot for the totChol variable
+ggplot(data = heartdata, aes(x = "", y = totChol)) +
+  geom_boxplot(outlier.colour = "red", outlier.shape = 16, outlier.size = 2) +  # Box plot with custom outliers
+  labs(title = "3. Box Plot of Total Cholesterol", 
+       x = "", 
+       y = "Cholesterol") +
+  theme_minimal()
+
+
+# Calculate the standard deviation of totChol, ignoring missing values
+sd_totChol <- sd(heartdata$totChol, na.rm = TRUE)
+
+# Print the standard deviation
+sd_totChol
+
+# Fit a linear model
+model <- lm(totChol ~ age + BMI + heartRate, data = heartdata)
+
+# Calculate the Jackknife residuals
+jackknife_residuals <- rstudent(model)  # Studentized residuals are used to identify outliers
+
+# Add Jackknife residuals to the data set
+heartdata$jackknife_residuals <- jackknife_residuals
+
+# Identify potential outliers where the absolute value of Jackknife residuals > 2
+outliers <- heartdata[abs(heartdata$jackknife_residuals) > 2, ]
+
+# Display potential outliers
+#outliers
+```
+Figure N. 
+
+1. The total cholesterol distribution appears to be roughly symmetric with extreme low and high values. The mean total cholesterol is 236.7 mg/dL and standard deviation of 44.3 mg/dL. The median total cholesterol is 234 mg/dL, which is slightly less than the mean indicating a slightly skewed right distribution. The data varies from 107 mg/dL to 696 mg/dL. 
+
+2. Although the distribution has a slight skewness to the right, the distribution appears to fit the Normal curve moderately well. However, the Shapiro-Wilk test resulted in a p-value of < 2.2e-16, which rejects the null hypothesis, indicating that there is not convincing evidence of a Normal distribution for total cholesterol.
+
+3. An examination of a box plot indicates low and high outliers. The results of a jackknife residual analysis indicates 173 outliers. The majority of outliers are high outliers. 
+
+
+
+```{r}
+# Create a density plot for sysBP using ggplot2
+ggplot(data = heartdata, aes(x = sysBP)) + 
+  geom_density(na.rm = TRUE, fill = "gold", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "Density Curve for Systolic Blood Pressure", 
+       x = "Systolic BP", 
+       y = "Density")
+
+# Create a box plot for sysBP
+ggplot(data = heartdata, aes(x = "", y = sysBP)) + 
+  geom_boxplot(fill = "white", outlier.colour = "red", outlier.shape = 16, outlier.size = 2) +
+  labs(title = "Box Plot of Systolic Blood Pressure (sysBP)", 
+       y = "Systolic Blood Pressure (sysBP)") +
+  theme_minimal()
+```
+Figure O. Systolic Blood Pressure distribution is skewed right. The median is 128 mmHg with an IQR of 27 mmHg. Several high outliers exist in this distribution. The highest systolic blood pressure is 295 mmHg.
+
+
+```{r}
+# Create a density plot for diaBP using ggplot2
+ggplot(data = heartdata, aes(x = diaBP)) + 
+  geom_density(na.rm = TRUE, fill = "yellow", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "1. Density Curve for Diastolic Blood Pressure", 
+       x = "Diastolic BP", 
+       y = "Density")
+
+
+# Calculate mean and standard deviation for normal curve
+mean_diaBP <- mean(heartdata$diaBP, na.rm = TRUE)
+sd_diaBP <- sd(heartdata$diaBP, na.rm = TRUE)
+
+
+# Create histogram with normal curve overlay
+ggplot(data = heartdata, aes(x = diaBP)) + 
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "lightblue", color = "black", alpha = 0.7) + 
+  stat_function(fun = dnorm, args = list(mean = mean_diaBP, sd = sd_diaBP), color = "red", size = 1) +
+  labs(title = "2. Histogram of Diastolic Blood Pressure (diaBP) with Normal Curve", 
+       x = "Diastolic Blood Pressure (diaBP)", 
+       y = "Density") +
+  theme_minimal()
+
+# Create a box plot for diaBP
+ggplot(data = heartdata, aes(x = "", y = diaBP)) + 
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 16, outlier.size = 2) +
+  labs(title = "3. Box Plot of Diastolic Blood Pressure (diaBP)", 
+       y = "Diastolic Blood Pressure (diaBP)") +
+  theme_minimal()
+
+# Perform Shapiro-Wilk normality test for diaBP
+shapiro_test_result <- shapiro.test(heartdata$diaBP)
+
+# Print the results
+#print(shapiro_test_result)
+
+# Create a Q-Q plot for diaBP
+qqnorm(heartdata$diaBP, main = "4. Q-Q Plot of Diastolic Blood Pressure (diaBP)")
+qqline(heartdata$diaBP, col = "red")  # Add a reference line
+
+
+```
+Figure P. 
+
+1. The density curve for the diastolic BP distribution has a roughly symmetric. The mean of 82.9 mmHg is similar to the median of 82 mmHg, confirming a roughly symmetric distribution. The diastolic BP data varies from 48 to 142.5 mmHg. 
+
+2. A Normal curve superimposed over a histogram indicates that the Diastolic BP distribution may be Normally distributed. However, a Shapiro-Wilk normality test indicates that the distribution is not normal. 
+
+3. Both low and high outliers can be seen in the box plot. Most of the observations that are outliers are high. 
+
+4. The Q-Q plot has a concave up form which confirms that the Diastolic BP distribution is not normal. 
+
+
+```{r}
+# Create a density plot for BMI using ggplot2
+ggplot(data = heartdata, aes(x = BMI)) + 
+  geom_density(na.rm = TRUE, fill = "purple", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "Density Curve for BMI", 
+       x = "BMI", 
+       y = "Density")
+
+# Calculate the mean and standard deviation of BMI
+mean_BMI <- mean(heartdata$BMI, na.rm = TRUE)
+sd_BMI <- sd(heartdata$BMI, na.rm = TRUE)
+
+# Create a histogram with a normal curve superimposed
+ggplot(heartdata, aes(x = BMI)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean_BMI, sd = sd_BMI), color = "red", size = 1) +
+  labs(title = "Histogram of BMI with Normal Curve", x = "BMI", y = "Density") +
+  theme_minimal()
+
+# Create a box plot for BMI
+ggplot(heartdata, aes(y = BMI)) +
+  geom_boxplot(fill = "lightgreen", color = "black") +
+  labs(title = "Box Plot of BMI", y = "BMI") +
+  theme_minimal()
+
+# Calculate the standard deviation of BMI
+sd_BMI <- sd(heartdata$BMI, na.rm = TRUE)
+
+# Display the result
+sd_BMI
+
+# Perform Shapiro-Wilk normality test on BMI
+shapiro_test_BMI <- shapiro.test(heartdata$BMI)
+
+# View the result
+#shapiro_test_BMI
+
+# Create a Q-Q plot for BMI
+qqnorm(heartdata$BMI, main = "Q-Q Plot of BMI")
+qqline(heartdata$BMI, col = "red")  # Add a reference line
+
+```
+Figure Q. The BMI distribution appears to have a slightly skewed right distribution due to some extremely high values. Without these outliers, the data appears roughly symmetric. The data varies from 15.54 to 56.80 kg/m^2. The mean BMI for this data subset is 25.8 kg/m^2, which is similar to the median value of 25.4 kg/m^2. The standard deviation is 4.07 kg/m^2. 
+
+```{r}
+# Create a density plot for heartRate using ggplot2
+ggplot(data = heartdata, aes(x = heartRate)) + 
+  geom_density(na.rm = TRUE, fill = "lightblue", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "Density Curve for Heart Rate", 
+       x = "Heart Rate", 
+       y = "Density")
+
+# Calculate the mean and standard deviation of heartRate
+mean_heartRate <- mean(heartdata$heartRate, na.rm = TRUE)
+sd_heartRate <- sd(heartdata$heartRate, na.rm = TRUE)
+
+# Create a histogram for heartRate with a normal curve superimposed
+ggplot(heartdata, aes(x = heartRate)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "seashell", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean_heartRate, sd = sd_heartRate), color = "red", size = 1) +
+  labs(title = "Histogram of Heart Rate with Normal Curve", x = "Heart Rate", y = "Density") +
+  theme_minimal()
+
+# Create a box plot for heartRate
+ggplot(heartdata, aes(y = heartRate)) +
+  geom_boxplot(fill = "lavender", color = "black") +
+  labs(title = "Box Plot of Heart Rate", y = "Heart Rate") +
+  theme_minimal()
+
+# Calculate the standard deviation of heartRate
+sd_heartRate <- sd(heartdata$heartRate, na.rm = TRUE)
+
+# Display the result
+sd_heartRate
+
+# Perform Shapiro-Wilk normality test for heartRate
+shapiro_test_result <- shapiro.test(heartdata$heartRate)
+
+# Display the result
+#shapiro_test_result
+
+# Create a Q-Q plot for heartRate
+qqnorm(heartdata$heartRate, main = "Q-Q Plot of Heart Rate")
+qqline(heartdata$heartRate, col = "red")  # Add a reference line
+
+```
+Figure R. The heartRate distribution appears to be roughly symmetric with the exception of a few high outliers. The mean heart rate is 75.88 beats/min which is close to the median heart rate of 75 beats/min. The standard deviation is 12.02 beats/min. The Shapiro Wilk test for normality produces a test statistic very close to 1, indicating normality. However, the test was insignificant. The QQ plot possibly indicates that the distribution follows a t-distribution. 
+
+```{r}
+# Create a density plot for glucose using ggplot2
+ggplot(data = heartdata, aes(x = glucose)) + 
+  geom_density(na.rm = TRUE, fill = "lavender", alpha = 0.5) +  # Fill color and transparency
+  labs(title = "Density Curve for Glucose", 
+       x = "Glucose", 
+       y = "Density")
+
+# Create a box plot for glucose
+ggplot(data = heartdata, aes(y = glucose)) + 
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.size = 2) + 
+  labs(title = "Box Plot of Glucose Levels", 
+       y = "Glucose Level") + 
+  theme_minimal()
+
+# Calculate the standard deviation of glucose
+#std_dev_glucose <- sd(heartdata$glucose, na.rm = TRUE)  # na.rm = TRUE excludes any missing values
+#std_dev_glucose
+
+
+```
+Figure S. The glucose distribution is skewed right. The median glucose level is 79 mg/dL which is slightly less than the mean glucose level of 81.93 mg/dL. The standard deviation of glucose is 22.85 mg/dL. The glucose levels vary from 40 to 394 mg/dL. The majority of extreme values are high outliers and about three values are low outliers. 
+
+
+## Pairwise Relationships
+
+The pairwise relationships between variables are examined. The variables considered are numerical. 
+
+
+```{r}
+
+# Step 1: Define the original quantitative variables
+quantitative_vars <- heartdata[, c("age", "cigsPerDay", "totChol", "sysBP", "diaBP", "BMI", "heartRate", "glucose")]
+
+# Step 2: Compute the correlation matrix for the specified quantitative variables
+correlation_matrix <- cor(quantitative_vars, use = "pairwise.complete.obs")
+
+# Step 3: Visualize the correlation matrix using corrplot
+# Adjust margins to prevent squishing and cut-off title
+par(mar = c(5, 1, 4, 1))  # bottom, left, top, right margins
+
+# Increase the size of the plot by adjusting the layout parameters
+corrplot(correlation_matrix, 
+         method = "circle",        # Choose 'circle' for circular visualization
+         type = "lower",           # Show only the lower triangle of the matrix
+         addCoef.col = "black",    # Add correlation coefficients in black
+         title = "Correlation Matrix for Original Quantitative Variables",
+         tl.col = "black",         # Color for the text labels
+         tl.srt = 45,              # Rotate text labels for better readability
+         cl.lim = c(-1, 1),        # Set color limits
+         number.cex = 0.7,         # Adjust font size of the numbers
+         tl.cex = 0.8,             # Adjust font size of the text labels
+         cex.main = 1.2)           # Adjust title size
+```
+
+Figure T. The strongest correlation is between systolic and diastolic blood pressure. Age and Systolic BP have a strong positive correlation of 0.39. As age increases, so does Systolic BP. BMI is also positively related to Systolic and Diastolic BP. As BMI increases, so does both of the BP measures. Total cholesterol and age have a positive correlation of 0.26. Most other pairwise variables are positively correlated with correlation coefficients of less than 0.20. There are just a few pairwise variables that have negative and weak correlations, and most of the variables are negatively correlated with cigsPerDay.
+
+
+```{r}
+
+# Step 1: Filter for numeric variables, excluding specific columns, those with "log", "predicted"
+numeric_vars <- heartdata %>%
+  select(where(is.numeric), -c(jackknife_residuals, currentSmoker)) %>%
+  select(-contains("log"), -contains("predicted"))
+
+# Step 2: Calculate the correlation matrix
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# Get the absolute correlation values and convert to a data frame
+cor_df <- as.data.frame(as.table(cor_matrix))
+cor_df <- cor_df[order(-abs(cor_df$Freq)), ]  # Sort by absolute correlation
+
+# Step 3: Get the top 6 unique correlated variable pairs, excluding reverse duplicates
+top_cor_vars <- cor_df %>%
+  filter(Var1 != Var2) %>%
+  filter(!duplicated(t(apply(.[, 1:2], 1, sort)))) %>%  # Remove reverse duplicates
+  distinct(Var1, Var2) %>%
+  head(6)
+
+# Step 4: Subset the original numeric data for the top correlated variables
+subset_vars <- unique(c(top_cor_vars$Var1, top_cor_vars$Var2))
+subset_data <- numeric_vars %>%
+  select(all_of(subset_vars))
+
+# Step 5: Create scatterplots for each unique pair
+for (i in 1:nrow(top_cor_vars)) {
+  var1_name <- top_cor_vars$Var1[i]
+  var2_name <- top_cor_vars$Var2[i]
+  
+  # Create the scatterplot
+  print(
+    xyplot(as.formula(paste(var1_name, "~", var2_name)), data = subset_data,
+           main = paste("Scatterplot of", var1_name, "vs", var2_name),
+           xlab = var2_name,
+           ylab = var1_name,
+           panel = function(...) {
+             panel.grid(h = -1, v = -1)  # Add grid
+             panel.xyplot(...)  # Scatter points
+           })
+  )
+}
+```
+Figure U. Scatterplots for top 6 most correlated pairs of original variables. Diastolic & systolic BP are highly linearly correlated, as clinically expected. All other pairs (Systolic BP & age, BMI & Diastolic/Systolic BP, Total Cholesterol & age, 
+Total Cholesterol & Systolic BP) are positively correlated. 
+
+
+
+```{r}
+#scatterplot age & cigsPerDay
+ggplot(heartdata, aes(x = age, y = cigsPerDay)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Age vs Cigarettes Per Day with Trend Line",
+       x = "Age",
+       y = "Cigarettes Per Day") +
+  theme_minimal()
+
+
+```
+Figure V. Age & CigsPerDay is the most strongly and negatively correlated variables. As participants increase in age, the number of cigarettes per day decreases. 
+
+
+
+
+# FEATURE ENGINEER 
+
+According to the CDC, smoking increases the risk of cardiovascular disease. (https://www.cdc.gov/tobacco/about/cigarettes-and-cardiovascular-disease.html). Cardiovascular disease includes heart disease, stroke, and peripheral artery disease. CHD, coronary heart disease, is the most common types of heart disease in the US. 
+
+Cigarettes per day, age, and total cholesterol are all variables in the Framingham Heart Data subset that are positively correlated with CHD. To capture the combined effects of these factors, a new variable named "smoking_risk_index" was created. This variable equally weights cigsPerDay, age, and totChol. The values of smoking_risk_index ranks individuals based on their smoking behavior, age, and cholesterol levels. The higher the index value, the higher an individual is at risk for CHD. 
+
+
+```{r}
+
+
+#create smoking risk index using weighting
+
+heartdata$smoking_risk_index <- (heartdata$cigsPerDay * 0.333) + 
+                                 (heartdata$age * 0.333) + 
+                                 (heartdata$totChol* 0.333)
+#head(heartdata)
+
+
+ggplot(heartdata, aes(x = smoking_risk_index)) +
+  geom_histogram(binwidth = 10, fill = "blue", color = "black") +
+  labs(title = "Distribution of Smoking Risk Index", 
+       x = "Smoking Risk Index", 
+       y = "Count") +
+  theme_minimal()
+
+# Generate QQ plot for smoking_risk_index
+qqnorm(heartdata$smoking_risk_index, main = "QQ Plot of Smoking Risk Index")
+qqline(heartdata$smoking_risk_index, col = "red")
+
+#summary statistics
+summary(heartdata$smoking_risk_index)
+# Standard deviation
+#sd(heartdata$smoking_risk_index)
+
+
+```
+
+Figure W. The smoking risk index distribution is roughly symmetric with a mean index of 98.35 and standard deviation of 16.02. The values of smoking_risk_index varies from 56.28 to 251.75. About 25% of participants have smoking_risk_index at or below 87.58 and about 25% of participants have smoking risk index values at or greater than 108.56. The QQ plot indicates that the distribution of smoking_risk_index is approximately normal. 
+
+
+
+```{r}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Step 1: Create a 5% bootstrap sample (sampling with replacement)
+n <- nrow(heartdata)
+bootstrap_sample <- heartdata[sample(1:n, size = 0.1 * n, replace = TRUE), ]
+
+# Step 2: Reshape the data to long format for ggplot
+long_data <- bootstrap_sample %>%
+  select(smoking_risk_index, sysBP, diaBP, BMI, heartRate, glucose) %>%
+  pivot_longer(-smoking_risk_index, names_to = "variable", values_to = "value")
+
+# Step 3: Create scatterplots with facets
+ggplot(long_data, aes(x = smoking_risk_index, y = value)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free_y") +
+  labs(title = "Relationship between Smoking Risk Index and Other Variables (Bootstrap 5% Sample)",
+       x = "Smoking Risk Index",
+       y = "Value") +
+  theme_minimal()
+```
+Figure X. The scatterplots visualize the relationship between the feature engineer, smoking_risk_index, against original numeric variables that are not factors. The relationships are weak with BMI, heartRate, and systolic BP variables. The relationship with glucose is not remarkable, either. 
+
+A slight linear relationship can be seen with diastolic BP. 
+
+```{r}
+
+
+n <- nrow(heartdata)
+bootstrap_sample2 <- heartdata[sample(1:n, size = 0.2 * n, replace = TRUE), ]
+
+ggplot(data = bootstrap_sample2, aes(x = smoking_risk_index, y = diaBP)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  ggtitle("Scatterplot of Diastolic BP and Smoking Risk Index") +
+  xlab("Smoking Risk Index") +
+  ylab("Diastolic BP") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+Figure Y. A linear relationship between smoking risk index and diastolic BP can be see in the scatterplot. The relationship is likely due to the strong correlation between diastolic BP and systolic BP, and systolic BP is a factor in the smoking risk index variable. 
+
+
+# ASSOCIATION ANALYSIS I
+
+This analysis examines smoking and sex for participants. How does smoking impact metrics in the Framingham Heart Study? Is sex a significant factor in some metrics?
+
+## Smoker Analysis
+
+
+To analyze the cigsPerDay, a new variable named "smoking_category" is created. Participants who smoke 20 or more cigarettes per day are labelled "heavy". Participants who smoke less than 20 cigarettes per day are labelled "moderate". All non-smokers have been excluded from this analysis. This variable facilitates comparisons between groups.
+
+
+
+```{r}
+
+# Load the required libraries
+library(dplyr)
+
+# Create heartdata3 from heartdata
+heartdata3 <- heartdata %>%
+  mutate(smoking_category = ifelse(cigsPerDay >= 20, "heavy", "moderate")) %>%
+  filter(currentSmoker == 1)
+
+```
+
+
+```{r}
+
+# Step 1: Create the heartdata3 dataset
+heartdata3 <- heartdata[heartdata$currentSmoker == 1, ]  # Filter only current smokers
+heartdata3$smoking_category <- ifelse(heartdata3$cigsPerDay >= 20, "heavy", "moderate")  # Create smoking_category
+
+# Step 2: List of variables to compare with smoking_category
+variables <- c("prevalentStroke", "prevalentHyp", "diabetes", "male", "BPMeds", "TenYearCHD")
+
+# Create a list to store the plots
+plot_list <- list()
+
+# Step 3: Loop through each variable to create mosaic plots
+for (var in variables) {
+  p <- ggplot(data = heartdata3) +
+    geom_mosaic(aes(x = product(smoking_category, !!sym(var)), fill = smoking_category)) +
+    labs(title = paste("Smoking Ctgry vs", var),
+         x = var,
+         y = "Smoking Ctgry") +
+    scale_fill_manual(values = c("heavy" = "blue", "moderate" = "red")) +  # Customize colors as needed
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),  # Smaller title size
+          axis.title.y = element_text(angle = 0, vjust = 0.5, size = 10),  # Adjust y-axis title size
+          axis.title.x = element_text(size = 10),  # Adjust x-axis title size
+          legend.position = "none")  # Remove legend
+  plot_list[[var]] <- p
+}
+
+# Step 4: Arrange the plots in a grid with controlled size
+gridExtra::grid.arrange(grobs = plot_list, ncol = 2, 
+             top = grid::textGrob("Comparison of Smoking Category with Various Health Outcomes", gp = grid::gpar(fontsize = 12, fontface = "bold")),  # Smaller top title
+             padding = unit(2, "lines"))
+
+
+```
+
+Figure Z. Heavy smokers in this study are more frequently male, have lower incidents of stroke, and have slightly higher incidence of 10 year risk of coronary heart disease. No association with smoking category can be visualized in the mosaic plots between prevalent hypertensive and diabetes. 
+
+
+Systolic BP is not normally distributed. Therefore, a log transformation is done to conduct an ANOVA analysis with smoking status (currentSmoker). Levene's Test indicates that the variances are unequal. Therefore, Welch's ANOVA is conducted. Based on the available data, there is evidence of a significant difference in systolic BP between smokers and non-smokers. 
+
+```{r}
+# Create a boxplot of sysBP by currentSmoker
+ggplot(heartdata, aes(x = factor(currentSmoker), y = sysBP)) +
+  geom_boxplot(fill = "skyblue") +
+  labs(title = "Comparison of Systolic Blood Pressure (sysBP) by Smoking Status",
+       x = "Current Smoker (0 = No, 1 = Yes)",
+       y = "Systolic Blood Pressure (sysBP)") +
+  theme_minimal()
+
+# Apply log transformation to sysBP
+heartdata$log_sysBP <- log(heartdata$sysBP)
+
+
+# Perform Welch's ANOVA with transformed sysBP
+welch_anova_result <- oneway.test(log_sysBP ~ currentSmoker, data = heartdata, var.equal = FALSE)
+
+# Summary of Welch's ANOVA result
+welch_anova_result
+```
+
+Figure AA. Welch's ANOVA results are significant. Based on the available data, there is evidence of a significant difference in systolic BP between smokers and non-smokers. In fact, current smokers have lower systolic blood pressure than non-smokers. 
+
+
+
+Diastolic BP is not normally distributed. Therefore, a log transformation is done to conduct an ANOVA analysis with smoking status (currentSmoker). Based on Levene's Test, the variances are the same. In turn, assumptions are met. Based on the available data, there is evidence of a significant difference in diastolic BP between smokers and non-smokers. 
+
+```{r}
+# Create a boxplot of diaBP by currentSmoker
+ggplot(heartdata, aes(x = factor(currentSmoker), y = diaBP)) +
+  geom_boxplot(fill = "green") +
+  labs(title = "Comparison of Diastolic Blood Pressure (sysBP) by Smoking Status",
+       x = "Current Smoker (0 = No, 1 = Yes)",
+       y = "Diastolic Blood Pressure (diaBP)") +
+  theme_minimal()
+
+# Apply log transformation to sysBP
+heartdata$log_diaBP <- log(heartdata$diaBP)
+
+# Perform Levene's Test for homogeneity of variances
+leveneTest(log_diaBP ~ currentSmoker, data = heartdata)
+
+# Perform ANOVA with transformed sysBP
+anova_result2 <- aov(log_diaBP ~ currentSmoker, data = heartdata)
+
+# Summary of ANOVA result
+summary(anova_result2)
+```
+Figure BB. The ANOVA analysis was significant. Based on the available data, there is evidence of a significant difference in diastolic BP between smokers and non-smokers. Similar to findings for systolic blood pressure, smokers have lower diastolic blood pressure compared to non-smokers. 
+
+
+```{r}
+
+# Create the new variables age_group and glucose_level
+heartdata <- heartdata %>%
+  mutate(
+    # Create age_group based on age
+    age_group = case_when(
+      age <= 59 ~ "middle-aged",
+      age >= 60 ~ "older"
+    )
+  )
+
+# Boxplot for age_group and cigsPerDay
+ggplot(heartdata, aes(x = age_group, y = cigsPerDay)) +
+  geom_boxplot(fill = "blue") +
+  labs(title = "Cigarettes per Day by Age Group",
+       x = "Age Group", 
+       y = "Cigarettes per Day") +
+  theme_minimal()
+
+
+
+```
+Figure CC. Middle-aged adults are 59 years old or young. Older adults are 60 or older. Middle aged adults who smoke in the Framingham Heart Study tend to smoke more cigarettes per day than older adults who smoke in the Framingham Heart Study.  
+
+
+
+
+
+```{r}
+
+ggplot(data = heartdata, aes(x = sysBP, fill = TenYearCHD)) +
+  geom_density(alpha = 0.3) +
+  ggtitle("Ten Year CHD vs Systolic BP") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position="top") +
+  xlab("Systolic BP") + 
+  ylab("Ten Year CHD")
+
+```
+Figure DD. Participants who were at risk for 10 year CHD have higher systolic BP than for participants who were not at risk for 10 year CHD. 
+
+```{r}
+
+heartdata$prevalentHyp <- as.character(heartdata$prevalentHyp)
+heartdata$currentSmoker <- as.character(heartdata$currentSmoker)
+heartdata$BPMeds <- as.character(heartdata$BPMeds)
+heartdata$male <- as.character(heartdata$male)
+heartdata$education <- as.character(heartdata$education)
+heartdata$prevalentStroke <- as.character(heartdata$prevalentStroke)
+heartdata$diabetes <- as.character(heartdata$diabetes)
+
+#str(heartdata)
+
+ggplot(data = heartdata, aes(x = diaBP, fill = prevalentHyp)) +
+  geom_density(alpha = 0.3) +
+  ggtitle("Prevalent Hypertensive vs Diastolic BP") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position="top") +
+  xlab("Diastolic BP") + 
+  ylab("Prevalent Hypertensive")
+
+```
+Figure EE. For prevalent hypertensive participants, the typical diastolic blood pressure is higher compared to those who are not prevalent hypertensive, as seen in the graph. In turn, there is an association between prevalent hypertensive and diastolic blood pressure.  
+
+
+
+## Sex Analysis
+
+Sex analysis may be informative in the context of health due to inherent biological differences. The differences in ten year risk for CHD between male and female is significantly different. In fact, male in this study have a higher ten year risk for CHD than female.
+
+
+```{r}
+# Load necessary libraries
+library(ggmosaic)
+
+# Create the mosaic plot
+mosaicplot(~ TenYearCHD + sex, 
+           data = heartviz, 
+           color = c("blue", "yellow"), 
+           main = "Mosaic Plot of TenYearCHD and Sex",
+           xlab = "TenYearCHD", 
+           ylab = "Sex")
+```
+Figure FF. Male participants in the study have a higher predicted ten year CHD risk compared to female participants in the study.  
+
+
+To further investigate the association visualized in the mosaic plot, a Chi Square Test of General Association is conducted (Table 2). All expected cell counts are equal to or greater than 5. Therefore, the test is justified.
+
+Ho: There is no association between sex and TenYearCHD.
+Ha: There is an association between sex and TenYearCHD
+
+There is evidence to suggest that an association exists between sex and TenYearCHD. 
+
+```{r}
+# Step 1: Create a contingency table
+contingency_table <- table(heartdata$male, heartdata$TenYearCHD)
+
+# Step 2: Display the contingency table
+print(contingency_table)
+
+# Step 3: Perform the Chi-square test
+chi_square_result <- chisq.test(contingency_table)
+
+# Step 4: Display the results
+print(chi_square_result)
+
+```
+Table 2. A general test of association between sex and TenYearCHD results in significant differences between male and female participants. In fact, male participants have a higher risk of developing CHD in the next 10 years. 
+
+
+
+# ASSOCIATION ANALYSIS II 
+
+## Diabetes
+
+
+The correlation between diabetes and glucose is 0.605708655, which indicates a strong relationship.The association of some variables, such as age, glucose levels, and BMI with diabetes is also examined. Three new variables are created to facilitate this analysis. 
+
+According to NIH (https://pmc.ncbi.nlm.nih.gov/articles/PMC10425921/), "young" means less than 35 years old, "middle-aged" means 36-59, and "older" means 60+ yrs old. Since the minimum age of participants in this data subset is 32, the "young" category is excluded in the analysis. A variable called age_group is created in the data set according to these guidelines. 
+
+Many tests are used to diagnose diabetes including glucose levels. According to the CDC (https://www.cdc.gov/diabetes/diabetes-testing/index.html), glucose levels greater than 126 mg/dL indicates diabetes, levels between 100 and 125 mg/dL indicates prediabetes, and normal levels is measured at 99 mg/dL or less. A new variable "glucose_level" is created based these CDC guidelines. 
+
+BMI is a screening measure that is used with other measures to assess health. A variable "BMI_category" has been created using the BMI data. According to the CDC (https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html), adults 20 years or older who have BMI less than 18.5 are underweight, 18.5 to less than 25 are healthy weight, 25 to less than 30 are overweight, and 30 or greater are obese. 
+
+```{r}
+
+# Create the new variables age_group and glucose_level
+heartdata <- heartdata %>%
+  mutate(
+    # Create age_group based on age
+    age_group = case_when(
+      age <= 59 ~ "middle-aged",
+      age >= 60 ~ "older"
+    ),
+    
+    # Create glucose_level based on glucose
+    glucose_level = case_when(
+      glucose <= 99 ~ "normal",
+      glucose >= 100 & glucose <= 125 ~ "prediabetes",
+      glucose >= 126 ~ "diabetes"
+    )
+  )
+
+# Create the BMI_category variable
+heartdata <- heartdata %>%
+  mutate(
+    BMI_category = case_when(
+      BMI < 18.5 ~ "underweight",
+      BMI >= 18.5 & BMI < 25 ~ "healthy_weight",
+      BMI >= 25 & BMI < 30 ~ "overweight",
+      BMI >= 30 ~ "obese"
+    )
+  )
+
+
+# Mosaic plot comparing age_group to diabetes
+mosaicplot(table(heartdata$age_group, heartdata$diabetes), 
+           main = "Mosaic Plot: Age Group vs. Diabetes", 
+           xlab = "Age Group", 
+           ylab = "Diabetes Status", 
+           col = c("lightblue", "lightcoral"))
+
+# Mosaic plot comparing glucose_level to diabetes
+mosaicplot(table(heartdata$glucose_level, heartdata$diabetes), 
+           main = "Mosaic Plot: Glucose Level vs. Diabetes", 
+           xlab = "Glucose Level", 
+           ylab = "Diabetes Status", 
+           col = c("lightgreen", "lightpink"))
+
+# Mosaic plot comparing age_group to glucose_level
+mosaicplot(table(heartdata$age_group, heartdata$glucose_level), 
+           main = "Mosaic Plot: Age Group vs. Glucose Level", 
+           xlab = "Age Group", 
+           ylab = "Glucose Level", 
+           col = c("lightyellow", "lightblue"))
+
+# Create a mosaic plot for BMI_category and glucose_level
+mosaicplot(table(heartdata$BMI_category, heartdata$glucose_level),
+           main = "Mosaic Plot: BMI Category vs. Glucose Level",
+           xlab = "BMI Category",
+           ylab = "Glucose Level",
+           col = c("lightblue", "lightgreen", "lightpink"),
+           border = "gray")
+
+# Create a mosaic plot for BMI_category and diabetes
+mosaicplot(table(heartdata$BMI_category, heartdata$diabetes),
+           main = "Mosaic Plot: BMI Category vs. diabetes",
+           xlab = "BMI Category",
+           ylab = "Diabetes Status",
+           col = c("lightblue", "lightgreen", "lightpink"),
+           border = "gray")
+
+
+
+```
+Figure GG. The Age Group vs. Diabetes mosaic plot displays an association between age group and diabetes. Older people tend to have a higher frequency of diabetes than middle-aged adults. The glucose level that indicates diabetes has the highest incidence of diabetes in the Glucose Level vs. Diabetes mosaic plot. The prediabetes glucose group has a higher frequency of diabetes than the normal glucose level group. An association can be seen between age group and glucose level in the Age Group vs. Glucose Level mosaic plot. Older adults tend to have higher glucose levels which indicate more prediabetes and diabetes compared to the other two younger age groups. A possible association can be seen between glucose level and BMI category, especially between underweight and healthy weight vs overweight and obese in the BMI Category vs Glucose Level mosaic plot. In the BMI Category vs Diabetes mosaic plot, a relationship can be seen between healthy weight and obese. 
+
+
+In turn, two way tables are created and appropriate association tests conducted.
+
+
+## Glucose vs Diabetes, Controlling for Age
+
+Analysis of the correlation between glucose level and diabetes, while controlling for age, was conducted with three degrees of freedom (Table 3). The contingency tables are 3X2 ordered-nominal arrays. All cell counts are greater than or equal to 5 and all row totals are greater than or equal to 20 when combined over all tables. Therefore, the test is justified. 
+
+Ho: There is no association between glucose level and diabetes status when controlling for age.
+Ha: There is a correlation between glucose level and diabetes status when controlling for age. 
+
+Since the p-value is approximately zero, which is less than 0.05, we reject the null. There is strong significant evidence of a positive correlation between glucose level and diabetes when controlling for age group. As glucose level increases, the diabetes status increases.
+
+```{r}
+
+# Ensure the factors are ordered
+heartdata <- heartdata %>%
+  mutate(
+    age_group = factor(age_group, levels = c("middle-aged", "older")),
+    glucose_level = factor(glucose_level, levels = c("normal", "prediabetes", "diabetes")),
+    BMI_category = factor(BMI_category, levels = c("underweight", "healthy_weight", "overweight", "obese"))
+  )
+
+# Convert glucose_level to an ordered factor
+heartdata$glucose_level <- factor(heartdata$glucose_level, 
+                                   levels = c("normal", "prediabetes", "diabetes"),
+                                   ordered = TRUE)
+
+# Create the contingency table for glucose level and diabetes, controlling for age group
+contingency_table1 <- table(heartdata$glucose_level, heartdata$diabetes, heartdata$age_group)
+
+# Display the contingency table
+print(contingency_table1)
+
+
+# Conduct the Cochran-Mantel-Haenszel test
+cmh_test_result <- mantelhaen.test(contingency_table1)
+
+# Print the test results
+cat("Cochran-Mantel-Haenszel Test Results:\n")
+print(cmh_test_result)
+
+```
+Table 3. The correlation test between glucose level and diabetes, while controlling for age, was significant.
+
+
+## BMI Category vs Diabetes, Control for Glucose Level
+
+Analysis of the correlation between BMI category and diabetes, while controlling for glucose level, was conducted (Table 4). The contingency tables are 4X2 ordered-nominal arrays. About 94% of cell counts are greater than or equal to 5 and all row totals are greater than or equal to 20 when combined over all tables. Therefore, the test is justified. 
+
+Ho: There is no association between BMI category and diabetes status when controlling for glucose level.
+Ha: There is a correlation between BMI category and diabetes status when controlling for glucose level. 
+
+Since the p-value is 0.01297, which is less than 0.05, we reject the null. There is evidence of a positive correlation between BMI category and diabetes when controlling for glucose level. As BMI category increases, the diabetes status increases. 
+
+
+```{r}
+
+# Convert BMI_category to an ordered factor
+heartdata$BMI_category <- factor(heartdata$BMI_category, 
+                                 levels = c("underweight", "healthy_weight", "overweight", "obese"),
+                                 ordered = TRUE)
+
+# Create the contingency table for BMI category and diabetes, controlling for glucose level
+contingency_table <- table(heartdata$BMI_category, heartdata$diabetes, heartdata$glucose_level)
+
+# Display the contingency table
+print(contingency_table)
+
+
+# Conduct the Cochran-Mantel-Haenszel test
+cmh_test_result <- mantelhaen.test(contingency_table)
+
+# Print the test results
+cat("Cochran-Mantel-Haenszel Test Results:\n")
+print(cmh_test_result)
+
+```
+Table 4. The test of correlation between BMI category and diabetes, while controlling for glucose level, was significant.
+
+
+## BMI Category vs Diabetes, Control for Age Group
+
+Analysis of the correlation between BMI category and diabetes, while controlling for age group, was also conducted. The contingency tables are 4X2 ordered-nominal arrays. All of the cell counts are greater than or equal to 5 when underweight and healthy_weight are collapsed and all row totals are greater than or equal to 20 when combined over all tables. Therefore, the test is justified. 
+
+Ho: There is no association between BMI category and diabetes status when controlling for age group.
+Ha: There is a correlation between BMI category and diabetes status when controlling for age group. 
+
+Since the p-value is approximately zero, which is less than 0.05, we reject the null. There is strong evidence of a positive correlation between BMI category and diabetes when controlling for age group. As BMI category increases, the diabetes status increases.
+
+```{r}
+
+# Convert BMI_category to an ordered factor
+heartdata$BMI_category <- factor(heartdata$BMI_category, 
+                                 levels = c("underweight", "healthy_weight", "overweight", "obese"),
+                                 ordered = TRUE)
+
+# Create the contingency table for BMI category and diabetes, controlling for age group
+contingency_table <- table(heartdata$BMI_category, heartdata$diabetes, heartdata$age_group)
+
+# Display the contingency table
+print(contingency_table)
+
+
+# Conduct the Cochran-Mantel-Haenszel test
+cmh_test_result <- mantelhaen.test(contingency_table)
+
+# Print the test results
+cat("Cochran-Mantel-Haenszel Test Results:\n")
+print(cmh_test_result)
+
+```
+Table 5. A test of correlation between BMI category and diabetes, while controlling for age group was significant.
+
+
+Based on the association analysis, glucose level is strongly correlated with diabetes, even when controlling for age, since age is associated with diabetes. Also, BMI Category is also strongly correlated with diabetes, even when controlling for age and glucose levels, since both factors are associated with diabetes. 
+
+
+# LOGISTIC REGRESSION
+
+## Full model
+
+
+The logistic regression analysis predicts Ten Year CHD, which is a binary response variable. The initial model contains all the variables in the original data subset. 
+
+```{r}
+
+# Convert TenYearCHD to a factor
+heartdata$TenYearCHD <- factor(heartdata$TenYearCHD)
+
+# Full logistic regression model
+full.model <- glm(TenYearCHD ~ male + age + education + currentSmoker+ cigsPerDay + BPMeds + prevalentStroke + prevalentHyp + diabetes + totChol + BMI + sysBP + diaBP + heartRate+ glucose, 
+             data = heartdata, 
+             family = binomial)
+
+
+# View the summary of the full model
+summary(full.model)
+
+coefficients <- summary(full.model)$coefficients
+print_logit_equation <- function(full.model) {
+    coefs <- summary(full.model)$coefficients
+    intercept <- round(coefs[1, 1], 4)
+    terms <- rownames(coefs)[-1]
+    equations <- sapply(1:length(terms), function(i) {
+        term_coef <- round(coefs[i + 1, 1], 4)
+        paste0(term_coef, " * ", terms[i])
+    })
+    logit_equation <- paste("logit(p) =", intercept, "+", paste(equations, collapse = " + "))
+    return(logit_equation)
+}
+
+logit_equation <- print_logit_equation(full.model)
+cat(logit_equation, "\n")
+```
+The full model is below. 
+
+logit(p) = -7.9926 + 0.4841 * male1 + 0.0607 * age + -0.2277 * education2 + -0.0262 * education1 + -0.1244 * education3 + 0.0196 * currentSmoker1 + 0.0212 * cigsPerDay + 0.25 * BPMeds1 + 0.9678 * prevalentStroke1 + 0.2306 * prevalentHyp1 + 0.1793 * diabetes1 + 0.0018 * totChol + 0.0034 * BMI + 0.0142 * sysBP + -0.0031 * diaBP + -0.0012 * heartRate + 0.0067 * glucose 
+
+
+
+## Trimmed Model
+
+The full model had six significant predictor variables (male, age, cigsPerDay, prevalentStroke, sysBP, glucose). A trimmed model is created using these variables. 
+
+
+```{r}
+
+# Trimmed logistic regression model
+trimmed.model <- glm(TenYearCHD ~ male + age + cigsPerDay + prevalentStroke + sysBP + glucose, 
+             data = heartdata, 
+             family = binomial)
+
+# View the summary of the trimmed model
+summary(trimmed.model)
+
+```
+
+
+The trimmed model is below.
+
+logit(p) = -8.4591 + 0.4851 * male1 + 0.0648 * age + 0.0214 * cigsPerDay + 1.047 * prevalentStroke1 + 0.0171 * sysBP + 0.0076 * glucose 
+
+
+
+The log odds of developing CHD in the next 10 years when all predictors are zero is -8.4591. This value is not meaningful in practical sense. It represents the logs odds value if all of the predictor variables can take on a value of zero.
+
+Being male (compared to female) increases the log odds of developing CHD in the next 10 years by approximately 0.485088. The odds ratio is approximately 1.62. This means that males have about 62% higher odds of developing CHD in the next 10 years compared to females.
+	
+For each additional year in age, the log odds of developing CHD in the next 10 years increase by approximately 0.06477. The odds ratio is approximately 1.067. This indicates that with each additional year of age, the odds of developing CHD in the next 10 years increase by about 6.7%.
+	
+For each additional cigarette smoked per day, the log odds of developing CHD in the next 10 years increase by approximately 0.021428. The odds ratio is approximately 1.021. This suggests that each additional cigarette per day increases the odds of developing CHD in the next 10 years by about 2.2%.
+	
+Having a prevalent stroke increases the log odds of developing CHD in the next 10 years by approximately 1.047024. The odds ratio is approximately 2.85. This means that individuals who have had a stroke are about 2.85 times more likely to develop CHD in the next 10 years compared to those without a stroke.
+	
+For each one-unit (mmHg) increase in systolic blood pressure (sysBP), the log odds of developing CHD in the next 10 years increase by approximately 0.017064. The odds ratio is approximately 1.017. This indicates that each additional unit (mmHg) increase in sysBP increases the odds of developing CHD in the next 10 years by about 1.7%.
+	
+For each one-unit (mg/dL) increase in glucose level, the log odds of developing CHD in the next 10 years increase by approximately 0.007577. The odds ratio is approximately 1.008. This suggests that each additional unit increase (mg/dL) in glucose increases the odds of developing CHD in the next 10 years by about 0.8%.
+
+
+Age and cigsPerDay were highly significant in the trimmed model. The feature engineer integrates both of these factors. In turn, a model is created using the feature engineer, smoking_risk_index in lieu of age and cigsPerDay. 
+
+```{r}
+fe.model <- glm(TenYearCHD ~ male + smoking_risk_index + prevalentStroke + sysBP + glucose, 
+             data = heartdata, 
+             family = binomial)
+
+summary(fe.model)
+
+```
+All variables are significant. This model has five variables, one less than the trimmed model. 
+
+logit(p) = -7.2477 + 0.6111 * male1 + 0.01550 * smoking_risk_index + 1.2134 * prevalentStroke1 + 0.0220 * sysBP + 0.0080 * glucose
+
+
+The intercept of -7.2477 represents the log odds of developing CHD in the next 10 years when all predictor variables are equal to zero. However, the intercept value is not meaningful in this context.
+
+The coefficient for male1 is 0.611129. This indicates that being male (compared to female) is associated with an increase in the log odds of developing CHD in the next 10 year. The odds ratio is approximately 1.84. This means that males have about 1.84 times the odds of developing CHD in the next 10 years compared to females, holding all other variables constant.
+
+The coefficient for smoking_risk_index is 0.015499. This suggests that for each one-unit increase in the smoking risk index, the log odds of developing CHD in the next 10 year increase by 0.015499. The odds ratio is 1.015499. This means that for each additional point in the smoking risk index, the odds of developing CHD in the next 10 years increase by approximately 1.5%.
+
+The coefficient for prevalentStroke1 is 1.213351. This indicates that having a prevalent stroke is associated with an increase in the log odds of developing CHD in the next 10 years by 1.213351. The odds ratio is approximately 3.36. This means that individuals with a prevalent stroke have about 3.36 times the odds of developing CHD in the next 10 years compared to those without.
+
+The coefficient for sysBP is 0.022035. This means that for each one-unit (mmHg) increase in systolic blood pressure, the log odds of developing CHD in the next 10 years increase by 0.022035. The odds ratio is approximately 1.0223. This suggests that for each unit (mmHg) increase in systolic blood pressure, the odds of developing CHD in the next 10 years increase by approximately 2.2%.
+
+The coefficient for glucose is 0.007982. This indicates that for each one-unit (mg/dL) increase in glucose level, the log odds of developing CHD in the next 10 years increase by 0.007982. The odds ratio is approximately 1.008. This means that for each unit (mg/dL) increase in glucose, the odds of developing CHD in the next 10 years increase by about 0.8%.
+
+
+
+# LOGISTIC MODEL DIAGNOSTICS
+
+The trimmed model and the feature engineer model were compared using ROC curve. The area under the curve for the trimmed model, 0.729, is greater than the area under the curve for the feature engineer model, 0.629. 
+
+```{r}
+# Get predicted probabilities
+trimmed_prob <- predict(trimmed.model, type = "response")
+fe_prob <- predict(fe.model, type = "response")
+
+# Calculate residuals
+trimmed_residuals <- residuals(trimmed.model, type = "deviance")
+fe_residuals <- residuals(fe.model, type = "deviance")
+
+
+# ROC Curve for trimmed.model
+roc_trimmed <- roc(heartdata$TenYearCHD, trimmed_prob)
+plot(roc_trimmed, main = "ROC Curve for Trimmed Model")
+auc(roc_trimmed)
+
+# ROC Curve for fe.model
+roc_fe <- roc(heartdata$TenYearCHD, fe_prob)
+plot(roc_fe, main = "ROC Curve for Feature Engineered Model")
+auc(roc_fe)
+
+
+```
+Figure HH. The trimmed model performed better than the feature engineer model. 
+
+
+Accuracy, sensitivity, and specificity were compared for both models as part of the diagnostics. Table 6 summarizes the findings. 
+
+1. Accuracy
+
+	•	Trimmed Model: 85.47%
+	•	Feature Engineered Model: 85.05%
+
+Accuracy represents the overall proportion of correct predictions (both true positives and true negatives) out of all predictions made. In both models, accuracy is high (around 85%), meaning they correctly classify about 85% of all cases.
+
+2. Sensitivity (Recall)
+
+	•	Trimmed Model: 8.23%
+	•	Feature Engineered Model: 4.81%
+
+Sensitivity (or recall) measures how well the model identifies actual positives (TenYearCHD = 1) which is the proportion of true positives out of all actual positives (TP / [TP + FN]).
+
+	•	Trimmed Model: This model only identifies about 8.23% of actual positive cases. The model struggles to correctly identify most cases where TenYearCHD = 1.
+	•	Feature Engineered Model: Sensitivity is even lower at 4.81%, indicating an even greater difficulty in identifying true positives (when TenYearCHD = 1).
+
+3. Specificity
+
+	•	Trimmed Model: 99.3%
+	•	Feature Engineered Model: 99.42%
+
+Specificity measures the model’s ability to correctly identify actual negatives (correctly predicting cases where TenYearCHD = 0). It’s the proportion of true negatives out of all actual negatives (TN / [TN + FP]).
+
+	•	Trimmed Model: 99.28% of actual negative cases are correctly classified, meaning it’s highly effective at identifying cases where TenYearCHD = 0.
+	•	Feature Engineered Model: 99.42%, even better at identifying negatives, but only slightly higher.
+
+
+Both models have high specificity and are very good at identifying cases where TenYearCHD = 0. However, both models have low sensitivity, meaning they are poor at identifying cases where TenYearCHD = 1. This may have occurred because less than 20% of observations had TenYearCHD = 1 (positive case). 
+
+
+```{r}
+
+# Assuming you have your models trimmed.model and fe.model already defined
+
+# Step 1: Predict probabilities for both models
+heartdata$predicted_trimmed <- predict(trimmed.model, newdata = heartdata, type = "response")
+heartdata$predicted_fe <- predict(fe.model, newdata = heartdata, type = "response")
+
+# Step 2: Convert predicted probabilities to binary outcomes (0 or 1)
+heartdata$predicted_trimmed_outcome <- ifelse(heartdata$predicted_trimmed > 0.5, 1, 0)
+heartdata$predicted_fe_outcome <- ifelse(heartdata$predicted_fe > 0.5, 1, 0)
+
+# Step 3: Compare predicted outcomes to actual TenYearCHD values
+# Calculate accuracy, sensitivity, specificity, etc., for both models
+
+# Function to calculate metrics
+calculate_metrics <- function(actual, predicted) {
+  confusion_matrix <- table(actual, predicted)
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  sensitivity <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+  specificity <- confusion_matrix[1, 1] / sum(confusion_matrix[1, ])
+  
+  list(accuracy = accuracy, sensitivity = sensitivity, specificity = specificity)
+}
+
+# Metrics for trimmed.model
+metrics_trimmed <- calculate_metrics(heartdata$TenYearCHD, heartdata$predicted_trimmed_outcome)
+cat("Trimmed Model Metrics:\n")
+print(metrics_trimmed)
+
+# Metrics for fe.model
+metrics_fe <- calculate_metrics(heartdata$TenYearCHD, heartdata$predicted_fe_outcome)
+cat("Feature Engineered Model Metrics:\n")
+print(metrics_fe)
+
+```
+Table 6. Both models have similar accuracy at about 85%. However, the trimmed model had higher sensitivity than the feature engineer model. The feature engineer model had slightly higher specificity than the trimmed model. 
+
+
+# CONCLUSION
+
+Most of the variables in this Framingham Heart Study data subset are known to be associated with heart disease, specifically CHD. As people age, the risk of developing heart disease increases due to various biological and behavioral factors. High blood pressure damages the heart and blood vessels, increasing the risk of heart disease. Individuals that are on blood pressure medication, a variable in this study, is an indication of high blood pressure. A higher resting heart rate is associated with heart disease because the heart is enduring a higher workload. Cholesterol levels are associated with developing CHD. Specifically, high levels of LDL cholesterol is strongly associated with heart disease. HDL cholesterol are protective against heart disease. However, the HDL variable was not included in this data subset. Smoking damages bloods vessels which increases the risk of heart disease. High blood glucose levels (indication of possible diabetes), can damage blood vessels and nerves controlling the heart. High BMI indicates excess weight which is associated with increased blood pressure, cholesterol levels, and risk of diabetes which are all factors of CHD. Males have a higher overall risk of developing heart disease earlier than females due to various reasons including hormones and genetics. (https://www.cdc.gov/heart-disease/risk-factors/index.html). Many of these findings are validated in this analysis.
+
+The goal of this analysis was to find significant associations and predictors for CHD. Significant evidence of association between sex and TenYearCHD was established through Analysis of Variance. In fact, males had higher outcomes of TenYearCHD than females. As well, significant evidence of association was found for blood pressure, both systolic and diastolic, for smokers and non-smokers. Smokers have lower blood pressure likely due to the vasodilatory effects of nicotine. 
+
+A Chi Square general test of association between sex and TenYearCHD indicated a significant association. In fact, men tend to have positive TenYearCHD outcomes more than women. A general tests of association resulted in significant correlations between glucose level and diabetes while controlling for age. As well, BMI and diabetes had significant correlation while controlling for glucose and age. 
+
+Logistic regression models were created to predict TenYearCHD. The trimmed model had the best performance using sex, age, cigarettes per day, prevalent stroke, systolic blood pressure, and glucose as factors. The models did not predict the positive outcomes very well. According to the Framingham Heart Study, the predictors used in their model includes age, sex, race, total cholesterol, HDL cholesterol, systolic blood pressure, blood pressure lowering medication use, diabetes, and smoking.  (https://www.framinghamheartstudy.org/fhs-risk-functions/cardiovascular-disease-10-year-risk/). Two of the factors, race and HDL cholesterol, were not available in the data subset used for this analysis. These missing factors may contribute to low sensitivity. As well, the accuracy is extremely high possibly because the model is predominantly predicting the majority group of TenYearCHD, which is the negative cases. 
+
+Overall, key relationships between factors were confirmed in this analysis. Benchmarking against the Framingham 10-year risk calculator (https://www.framinghamheartstudy.org/fhs-risk-functions/cardiovascular-disease-10-year-risk/), factors were successfully identified in this analysis as being significant predictors of TenYearCHD.  
+
+
+# WORKS CITED
+
+Centers for Disease Control and Prevention. (n.d.). Defining adult overweight & obesity. U.S. Department of Health and Human Services. https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html
+
+Centers for Disease Control and Prevention. (n.d.). Diabetes tests. U.S. Department of Health and Human Services. https://www.cdc.gov/diabetes/diabetes-testing/index.htm
+
+Centers for Disease Control and Prevention. (2023, April 13). Risk factors for heart disease. https://www.cdc.gov/heart-disease/risk-factors/index.html
+
+Davies B. Healthcare Priorities: The "Young" and the "Old". Camb Q Healthc Ethics. 2022 Nov 10;32(2):1-12. doi: 10.1017/S0963180122000299. Epub ahead of print. PMID: 36352770; PMCID: PMC10425921.
+
+Framingham Heart Study. (n.d.). Cardiovascular disease 10-year risk. Retrieved October 22, 2024, from https://www.framinghamheartstudy.org/fhs-risk-functions/cardiovascular-disease-10-year-risk/
+
+Sharma, R., Kaur, R., Kaur, G., Singh, K., Prabhakar, A., Sharma, A., & Kaur, A. (2022). Emerging roles of gut microbiota in health and disease: A review. Frontiers in Microbiology, 13, Article 799848. https://doi.org/10.3389/fmicb.2022.799848
+
