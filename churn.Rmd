@@ -1,0 +1,1433 @@
+---
+title: 'Iranian Churn: A Comparative Analysis of Regularization and Support Vector Models for Customer Value and Churn Prediction'
+author: "Joanne Musa"
+date: "April 2025"
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 24px;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+  font-weight: bold;
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 20px;
+  font-family: system-ui;
+  color: DarkRed;
+  text-align: center;
+  font-weight: bold;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 18px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+}
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: center;
+    font-weight: bold;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 20px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+    font-weight: bold;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+
+if (!require("MASS")) {
+   install.packages("MASS")
+   library(MASS)
+}
+if (!require("leaflet")) {
+   install.packages("leaflet")
+   library(leaflet)
+}
+
+if (!require("ggridges")) {
+   install.packages("ggridges")
+library(ggridges)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+
+if (!require("ggplot2")) {
+   install.packages("ggplot2")
+   library(ggplot2)
+}
+if (!require("nnet")) {
+   install.packages("nnet")
+   library(nnet)
+}
+ 
+if (!require("nortest")) {
+   install.packages("nortest")
+   library(nortest)
+} 
+
+if (!require("corrplot")) {
+   install.packages("corrplot")
+   library(corrplot)
+}
+
+if (!require("VIM")) {
+   install.packages("VIM")
+   library(VIM)
+}
+
+
+if (!require("mice")) {
+   install.packages("mice")
+   library(mice)
+}
+
+if (!require("naniar")) {
+   install.packages("naniar")
+   library(naniar)
+
+}
+
+if (!require("GGally")) {
+   install.packages("GGally")
+   library(GGally)
+
+}
+
+if (!require("glmnet")) {
+   install.packages("glmnet")
+   library(glmnet)
+
+}
+
+if (!require("caret")) {
+   install.packages("caret")
+   library(caret)
+
+}
+
+if (!require("pROC")) {
+   install.packages("pROC")
+   library(pROC)
+
+}
+
+if (!require(vcd)) {
+  install.packages("vcd")
+}
+    library(vcd)
+
+if (!require(FactoMineR)) {
+  install.packages("FactoMineR")
+}
+    library(FactoMineR)
+
+if (!require(factoextra)) {
+  install.packages("factoextra")
+}
+    library(factoextra)
+
+
+if (!require(kableExtra)) {
+  install.packages("kableExtra")
+}
+    library(kableExtra)
+
+
+if (!require(kernlab)) {
+  install.packages("kernlab")
+}
+    library(kernlab)
+
+
+if (!require(e1071)) {
+  install.packages("e1071")
+}
+    library(e1071)
+
+if (!require(doParallel)) {
+  install.packages("doParallel")
+}
+    library(doParallel)
+
+
+
+
+
+knitr::opts_chunk$set(
+                      echo = TRUE,   
+                      warning = FALSE,  
+                      result = TRUE,    
+                      message = FALSE,
+                      comment = NA
+                      )  
+```
+
+
+
+# INTRODUCTION
+
+```{r}
+#setwd("/Users/joannmusa/Desktop")
+      
+churn <- read.csv("https://jmusa3.github.io/jmusa/Customer_Churn.csv")
+
+
+churn <- churn %>%
+  rename(Call.Failure = `Call..Failure`,
+         Subscription.Length = `Subscription..Length`,
+         Charge.Amount = `Charge..Amount`)
+
+# Rename the column
+churn <- rename(churn, Frequency.of.Use = Frequency.of.use)
+churn <- rename(churn, Complaints = Complains)
+#head(churn)
+
+
+```
+
+The Iranian Churn Dataset, available from the UCI Machine Learning Repository, comprises data collected over 12 months from an Iranian telecom company’s database. It contains 3,150 instances, each representing a customer, with 13 attributes detailing various aspects of customer behavior and demographics.
+
+Summary of Variables:
+
+	1.	Call Failure: Integer. Number of call failures experienced by the customer.
+	2.	Complaints: Binary (0 or 1). Indicates whether the customer has lodged complaints (1) or not (0).
+	3.	Subscription Length: Integer. Total duration (in months) of the customer’s subscription.
+	4.	Charge Amount: Ordinal (0 to 9). Represents the charge amount, with 0 being the lowest and 9 the highest.
+	5.	Seconds of Use: Integer. Total seconds of calls made by the customer.
+	6.	Frequency of Use: Integer. Total number of calls made by the customer.
+	7.	Frequency of SMS: Integer. Total number of text messages sent by the customer.
+	8.	Distinct Called Numbers: Integer. Total number of distinct phone numbers called by the customer.
+	9.	Age Group: Ordinal (1 to 5). Represents the age group of the customer, with 1 being younger and 5 older.
+	10.	Tariff Plan: Categorical/Binary (1 or 2). Indicates the type of service: 1 for ‘Pay as you go’ and 2 for ‘Contractual’.
+	11.	Status: Categorical/Binary (1 or 2). Represents the customer’s status: 1 for ‘Active’ and 2 for ‘Non-active’.
+	12.	Churn: Categorical/Binary (0 or 1). Class label indicating whether the customer has churned (1) or not (0).
+	13.	Customer Value: Integer. Calculated value representing the customer’s worth to the company.
+
+These variables provide insights into customer behaviors, service usage patterns, and demographic information, facilitating analyses aimed at understanding and predicting customer churn.
+
+There are no missing values in this data set. 
+
+
+# EDA
+
+## Distribution of Individual Features
+
+Understanding the distribution of individual features within the Iranian Churn Dataset is crucial for identifying patterns and insights related to customer behavior and churn tendencies. By analyzing the distribution of these features, significant trends can be visualized, such as the relationship between service usage patterns and customer retention, the impact of demographic factors on churn rates, and the effectiveness of different tariff plans. Such insights are instrumental in developing targeted strategies to enhance customer satisfaction and reduce churn.
+
+```{r}
+# Set up a 2x2 plotting area
+par(mfrow = c(2, 2))
+
+# Histogram for Call Failure
+hist(churn$Call.Failure,
+     main = "Histogram of Call Failure",
+     xlab = "Number of Call Failures",
+     col = "steelblue")
+
+# Histogram for Subscription Length
+hist(churn$Subscription.Length,
+     main = "Histogram of Subscription Length",
+     xlab = "Subscription Length (Months)",
+     col = "steelblue")
+
+# Histogram for Seconds of Use
+hist(churn$Seconds.of.Use,
+     main = "Histogram of Seconds of Use",
+     xlab = "Seconds of Use",
+     col = "steelblue")
+
+# Histogram for Frequency of Use
+hist(churn$Frequency.of.Use,
+     main = "Histogram of Frequency of Use",
+     xlab = "Frequency of Use",
+     col = "steelblue")
+
+```
+
+
+Figure A. Histograms of Call Failure, Subscription Length, Seconds of Use, and Frequency of Use.
+
+
+
+
+```{r}
+# Set up a 2x2 plotting area
+par(mfrow = c(2, 2))
+
+# Histogram for Frequency.of.SMS
+hist(churn$Frequency.of.SMS,
+     main = "Histogram of Frequency.of.SMS",
+     xlab = "Frequency.of.SMS",
+     col = "steelblue",
+     border = "black")
+
+# Histogram for Distinct.Called.Numbers
+hist(churn$Distinct.Called.Numbers,
+     main = "Histogram of Distinct.Called.Numbers",
+     xlab = "Distinct.Called.Numbers",
+     col = "steelblue",
+     border = "black")
+
+# Histogram for Age
+hist(churn$Age,
+     main = "Histogram of Age",
+     xlab = "Age",
+     col = "steelblue",
+     border = "black")
+
+# Histogram for Customer.Value
+hist(churn$Customer.Value,
+     main = "Histogram of Customer.Value",
+     xlab = "Customer.Value",
+     col = "steelblue",
+     border = "black")
+
+# Reset to default plotting area
+par(mfrow = c(1, 1))
+
+
+```
+
+
+Figure B. Histograms of Frequency of SMS, Distinct Called Numbers, Age, and Customer Value.
+
+
+```{r}
+# Set up a 2x2 plotting area
+par(mfrow = c(2, 2))
+
+# Bar graph for Complains
+barplot(table(churn$Complaints),
+        main = "Bar Graph of Complaints",
+        xlab = "Complains",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+# Bar graph for Charge.Amount
+barplot(table(churn$Charge.Amount),
+        main = "Bar Graph of Charge.Amount",
+        xlab = "Charge.Amount",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+# Bar graph for Age.Group
+barplot(table(churn$Age.Group),
+        main = "Bar Graph of Age.Group",
+        xlab = "Age.Group",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+# Bar graph for Tariff.Plan
+barplot(table(churn$Tariff.Plan),
+        main = "Bar Graph of Tariff.Plan",
+        xlab = "Tariff.Plan",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+
+```
+
+Figure C. Bar charts of Complaints, Charge Amount, Age Group, and Tariff Plan. 
+
+
+A new feature named Charge.Level is created using Charge.Amount. Any Charge.Amount between 0 and 2 is "low" indicated by a Charge.Level of "0". Any Charge.Amount between 3 and 6 is "medium" indicated by a Charge.Level of "1". Any Charge.Amount between 7 and 9 is "high" indicated by a Charge.Level of "2". 
+
+```{r}
+
+# Convert Charge.Amount to numeric (if not already)
+churn$Charge.Amount <- as.numeric(churn$Charge.Amount)
+
+# Create Charge.Level based on Charge.Amount
+churn <- churn %>%
+  mutate(Charge.Level = case_when(
+    Charge.Amount >= 0 & Charge.Amount <= 2 ~ "0",
+    Charge.Amount > 2 & Charge.Amount <= 6 ~ "1",
+    Charge.Amount > 6 & Charge.Amount <= 12 ~ "2",
+    TRUE ~ NA_character_
+  ))
+
+
+
+# Remove rows with NA in Charge.Level
+churn <- churn %>%
+  filter(!is.na(Charge.Level))
+
+# Create a frequency table for Charge.Level
+charge_level_counts <- table(churn$Charge.Level)
+
+# Generate the bar chart
+barplot(charge_level_counts,
+        main = "Distribution of Charge.Level",
+        xlab = "Charge Level",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+```
+
+Figure D. Bar Chart of engineered feature, Charge Level. 
+
+```{r}
+# Set up a 2x1 plotting area
+par(mfrow = c(1, 2))
+
+# Bar graph for Status
+barplot(table(churn$Status),
+        main = "Bar Graph of Status",
+        xlab = "Status",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+# Bar graph for Churn
+barplot(table(churn$Churn),
+        main = "Bar Graph of Churn",
+        xlab = "Churn",
+        ylab = "Frequency",
+        col = "steelblue",
+        border = "black")
+
+# Reset to default plotting area
+par(mfrow = c(1, 1))
+
+```
+
+Figure E. Bar chart of Status and Churn. 
+
+
+## Relationship between Features
+
+Examining relationships between continuous variables using scatterplots and a correlation matrix provides a comprehensive approach to understanding associations. Scatterplots visually reveal how two continuous variables interact, allowing us to identify trends, correlations, and potential outliers. Meanwhile, a correlation matrix quantifies the strength and direction of relationships between multiple variables at once, helping to pinpoint which pairs are strongly correlated. Together, scatterplots and a correlation matrix offer valuable insights into the underlying patterns in the data, guiding further statistical analysis and model selection. In addition, examining relationships between categorical variables using mosaic plots reveal potential association between features. 
+
+```{r}
+
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Calculate 20% of the dataset size
+sample_size <- floor(0.20 * nrow(churn))
+
+# Generate bootstrap sample indices
+bootstrap_indices <- sample(seq_len(nrow(churn)), size = sample_size, replace = TRUE)
+
+# Create bootstrap sample
+bootstrap_sample <- churn[bootstrap_indices, ]
+
+
+# Select relevant columns
+selected_vars <- bootstrap_sample[, c("Call.Failure", "Subscription.Length", "Seconds.of.Use", 
+                                      "Frequency.of.Use", "Frequency.of.SMS", "Distinct.Called.Numbers", "Age", 
+                                      "Customer.Value")]
+
+# Create scatterplot matrix
+pairs(selected_vars, 
+      main = "Scatterplot Matrix of Selected Variables (20% Bootstrap Sample)",
+      pch = 19,  # Solid circle for points
+      col = "blue")  # Color of points
+
+
+```
+
+Figure F. Matrix of pairwise relationships. Age does not have a linear relationship with any other quantitative feature. All other pairwise features appear to have linear relationships. 
+
+Correlation is used to further examine strength and direction of pairwise relationships. 
+
+```{r}
+# Select relevant columns
+selected_vars <- churn[, c("Call.Failure", "Subscription.Length", "Seconds.of.Use", 
+                           "Frequency.of.Use", "Frequency.of.SMS", "Distinct.Called.Numbers", "Age", 
+                           "Customer.Value")]
+
+# Compute correlation matrix
+cor_matrix <- cor(selected_vars, use = "complete.obs", method = "pearson")
+
+
+
+# Visualize the correlation matrix with adjusted top margin
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, 
+         addCoef.col = "black", number.cex = 0.7,
+         col = colorRampPalette(c("red", "white", "blue"))(200),
+         main = "Correlation Matrix of Selected Variables",
+         mar = c(0, 0, 2, 0))  # Adjust the top margin here
+
+
+```
+
+Figure G. Frequency of SMS is highly correlated with customer value. Frequency of use and frequency of seconds are also highly correlated with distinct call numbers. Subscription length has the most correlation with Seconds of Use. However, that relationship is not very strong. Most other pairwise features have positive correlations except Customer Value and Age, which has a negative correlation. 
+
+
+
+
+```{r}
+
+# Convert variables to factors if they are not already
+churn$Complaints <- as.factor(churn$Complaints)
+churn$Charge.Amount <- as.factor(churn$Charge.Amount)
+churn$Age.Group <- as.factor(churn$Age.Group)
+churn$Tariff.Plan <- as.factor(churn$Tariff.Plan)
+churn$Status <- as.factor(churn$Status)
+churn$Churn <- as.factor(churn$Churn)
+
+
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+
+# Mosaic plot for Complaints vs Charge.Level
+mosaicplot(table(churn$Complaints, churn$Charge.Level),
+           main = "Complaints vs Charge Level",
+           xlab = "Complaints", ylab = "Charge Level",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Complaints vs Age.Group
+mosaicplot(table(churn$Complaints, churn$Age.Group),
+           main = "Complaints vs Age Group",
+           xlab = "Complaints", ylab = "Age Group",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Complaints vs Tariff.Plan
+mosaicplot(table(churn$Complaints, churn$Tariff.Plan),
+           main = "Complaints vs Tariff Plan",
+           xlab = "Complaints", ylab = "Tariff Plan",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Complaints vs Status
+mosaicplot(table(churn$Complaints, churn$Status),
+           main = "Complaints vs Status",
+           xlab = "Complaints", ylab = "Status",
+           col = c("lightblue", "lightyellow"))
+
+
+
+
+
+
+```
+
+Figure H. There appears to be a strong association between complaints and charge level, status, and age group. The less customers spend the more they complain. The middle age group tend to complain more. Customers who complained more tend to be inactive customers. 
+
+
+
+```{r}
+
+par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))
+
+# Mosaic plot for Churn vs Complaints
+mosaicplot(table(churn$Churn, churn$Complaints),
+           main = "Churn vs Complaints",
+           xlab = "Churn", ylab = "Complaints",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Churn vs Age.Group
+mosaicplot(table(churn$Churn, churn$Age.Group),
+           main = "Churn vs Age Group",
+           xlab = "Churn", ylab = "Age Group",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Churn vs Tariff.Plan
+mosaicplot(table(churn$Churn, churn$Tariff.Plan),
+           main = "Churn vs Tariff Plan",
+           xlab = "Churn", ylab = "Tariff Plan",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Churn vs Charge.Level
+mosaicplot(table(churn$Churn, churn$Charge.Level),
+           main = "Churn vs Charge Level",
+           xlab = "Churn", ylab = "Charge Level",
+           col = c("lightblue", "lightyellow"))
+
+# Mosaic plot for Churn vs Status
+mosaicplot(table(churn$Churn, churn$Status),
+           main = "Churn vs Status",
+           xlab = "Churn", ylab = "Status",
+           col = c("lightblue", "lightyellow"))
+
+
+```
+Figure I. Churn is associated with complaints, age group, tariff plan, charge level, and status. Customers who complain tend to have higher churn rates. The youngest and oldest age groups tend to have lower churn rates, while the three middles age groups do tend to have higher churn rates. Those customers on pay as you go plans have higher churn rates. Customers who have the lowest charge level tend have higher churn rates. Customers who are inactive tend to have a much higher churn rate. 
+
+
+## FEATURE ENGINEER
+
+
+Principal Component Analysis (PCA) is a powerful unsupervised technique for data analysis. PCA reduces the dimensionality of data by transforming it into uncorrelated components, preserving the most variance. 
+
+
+```{r}
+
+# Subset the data to include only the relevant features
+churn_subset <- churn[, c("Subscription.Length", "Seconds.of.Use", 
+                          "Frequency.of.Use", "Frequency.of.SMS", "Distinct.Called.Numbers")]
+
+# Apply log transformation (adding 1 to avoid log(0) issues)
+churn_log <- log(churn_subset + 1)
+
+# Standardize the data (mean = 0, standard deviation = 1)
+churn_scaled <- scale(churn_log)
+
+# Perform PCA
+pca_result <- prcomp(churn_scaled, center = TRUE, scale. = TRUE)
+
+# Create a new dataframe with the first three principal components
+pca_data <- data.frame(pca_result$x[, 1:3])  # Extract PCA1, PCA2, PCA3
+
+# Rename the columns based on the biggest contributors to each principal component
+# Based on the loadings, rename the components:
+# PCA1 is mainly influenced by Seconds.of.Use, Frequency.of.Use, and Distinct.Called.Numbers
+# PCA2 is influenced by Subscription.Length
+# PCA3 is influenced by Frequency.of.SMS
+colnames(pca_data) <- c("Usage.Frequency.PC", "Subscription.Length.PC", "Frequency.SMS.PC")
+
+# Combine PCA components with the original dataset (excluding specified columns)
+churn.pca <- cbind(churn, pca_data)
+
+# Drop only the specified columns (Subscription.Length, Seconds.of.Use, Frequency.of.Use, Frequency.of.SMS)
+churn.pca <- churn.pca[, !colnames(churn.pca) %in% c("Subscription.Length", "Seconds.of.Use", "Frequency.of.Use", "Frequency.of.SMS")]
+
+# Display the PCA loadings (i.e., the importance of each original feature for each principal component)
+loadings <- pca_result$rotation
+print(loadings)
+
+# Display PCA summary and importance
+pca_summary <- summary(pca_result)
+importance_df <- as.data.frame(pca_summary$importance)
+importance_df <- t(importance_df)
+colnames(importance_df) <- c("Standard Deviation", "Proportion of Variance", "Cumulative Proportion")
+
+# Print the PCA summary with kable
+kable(importance_df, caption = "PCA Summary: Importance of Components")
+
+#head(churn.pca)
+
+```
+
+Table 1. The PCA analysis reduced the dimensionality of the data by creating three principal components, capturing the most significant variance. These components simplify the data while retaining essential information for further analysis.
+
+
+# LINEAR REGRESSION
+
+## Regularized Linear Regression
+
+In analyzing customer churn data with PCA features to predict customer value, regularized regression techniques such as Lasso, Ridge, and Elastic Net are employed to enhance predictive accuracy and model interpretability. Lasso Regression (Least Absolute Shrinkage and Selection Operator) introduces an L1 penalty, encouraging sparsity by shrinking some coefficients to zero, effectively performing variable selection. Ridge Regression, on the other hand, applies an L2 penalty, which shrinks coefficients uniformly, particularly useful when dealing with multicollinearity among predictors. Elastic Net Regression combines both L1 and L2 penalties, offering a balanced approach that leverages the strengths of Lasso and Ridge, making it especially effective in scenarios with highly correlated features or when the number of predictors exceeds the number of observations. Utilizing these methods in churn analysis allows for the identification of key factors influencing customer retention, leading to more targeted and effective business strategies.
+
+
+
+### Lasso
+
+Lasso (Least Absolute Shrinkage and Selection Operator) regression is a regularization technique that enhances the prediction accuracy and interpretability of statistical models by adding a penalty equal to the absolute value of the magnitude of coefficients. This method performs variable selection and regularization simultaneously, producing sparse models where some coefficients are exactly zero.  
+
+```{r}
+ 
+# Define response variable
+response <- churn.pca$Customer.Value
+
+# Define matrix of predictor variables
+predictors <- data.matrix(churn.pca[, setdiff(names(churn.pca), "Customer.Value")])
+
+
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(response, p = 0.8, list = FALSE)
+x_train <- predictors[train_index, ]
+y_train <- response[train_index]
+x_test <- predictors[-train_index, ]
+y_test <- response[-train_index]
+
+# Perform cross-validation to find the optimal lambda
+cv_model <- cv.glmnet(x_train, y_train, alpha = 1, standardize = TRUE)
+
+# Extract the best lambda value
+best_lambda <- cv_model$lambda.min
+
+# Make predictions on the test set
+predictions <- predict(cv_model, s = best_lambda, newx = x_test)
+
+# MSE Lasso
+mse_lasso <- mean((predictions - y_test)^2)
+#print(paste("Mean Squared Error on Test Set:", round(mse_lasso, 2)))
+
+# Extract coefficients as a matrix
+coef_matrix <- as.matrix(coef(cv_model, s = best_lambda))
+
+# Convert the matrix to a data frame
+coef_df <- data.frame(
+  Feature = rownames(coef_matrix),
+  Coefficient = coef_matrix[, 1],
+  row.names = NULL
+)
+
+# Filter out features with zero coefficients
+non_zero_coef_df <- subset(coef_df, Coefficient != 0)
+
+# Display the table using kable
+non_zero_coef_df %>%
+  kable(
+    caption = "Non-Zero Coefficients from Lasso Regression Model",
+    col.names = c("Feature", "Coefficient"),
+    align = "l"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+```
+
+Table 2. The table displays the non-zero coefficients identified by the Lasso regression model. Variables with zero coefficients were excluded, as Lasso performs both regularization and feature selection. The remaining variables contribute to the prediction of the target variable and are retained in the final model.
+
+
+### Ridge
+
+
+Ridge regression, also known as L2 regularization, is a technique used to address multicollinearity in linear regression models by adding a penalty equal to the square of the magnitude of the coefficients. This method helps in reducing model complexity and preventing overfitting, especially when predictor variables are highly correlated. By introducing this penalty, ridge regression shrinks the coefficients toward zero, leading to more stable and interpretable models.
+
+
+```{r}
+# Define response variable
+response <- churn.pca$Customer.Value
+
+# Define matrix of predictor variables, excluding the response variable
+predictors <- data.matrix(churn.pca[, setdiff(names(churn.pca), "Customer.Value")])
+
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(response, p = 0.8, list = FALSE)
+x_train <- predictors[train_index, ]
+y_train <- response[train_index]
+x_test <- predictors[-train_index, ]
+y_test <- response[-train_index]
+
+
+# Perform cross-validation to find the optimal lambda
+cv_model <- cv.glmnet(x_train, y_train, alpha = 0, standardize = TRUE)
+
+# Extract the best lambda value
+best_lambda <- cv_model$lambda.min
+
+# Make predictions on the test set
+predictions <- predict(cv_model, s = best_lambda, newx = x_test)
+
+# Calculate Mean Squared Error (MSE)
+mse_ridge <- mean((predictions - y_test)^2)
+cat("Mean Squared Error on Test Set:", round(mse_ridge, 2), "\n")
+
+# Extract coefficients as a matrix
+coef_matrix <- as.matrix(coef(cv_model, s = best_lambda))
+
+# Convert the matrix to a data frame
+coef_df <- data.frame(
+  Feature = rownames(coef_matrix),
+  Coefficient = coef_matrix[, 1],
+  row.names = NULL
+)
+
+# Display the table using kable
+coef_df %>%
+  kable(
+    caption = "Coefficients from Ridge Regression Model",
+    col.names = c("Feature", "Coefficient"),
+    align = "l"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+
+
+```
+
+Table 3. The table displays the coefficients from the Ridge regression model. Unlike Lasso, Ridge does not eliminate variables but instead shrinks all coefficients toward zero. All predictors remain in the model, but their influence is reduced to prevent overfitting and improve generalization.
+
+
+### Elastic Net
+
+Elastic Net regression is a regularization technique that linearly combines the penalties of both Lasso (L1) and Ridge (L2) methods to enhance the prediction accuracy and interpretability of regression models. By balancing these penalties, Elastic Net is particularly effective in scenarios with highly correlated variables and when the number of predictors exceeds the number of observations. This approach inherits the variable selection properties of Lasso and the coefficient shrinkage benefits of Ridge, making it a versatile tool for various regression challenges
+
+
+```{r}
+
+# Define response variable
+response <- churn.pca$Customer.Value
+
+# Define matrix of predictor variables, excluding the response variable
+predictors <- data.matrix(churn.pca[, setdiff(names(churn.pca), "Customer.Value")])
+
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(response, p = 0.8, list = FALSE)
+x_train <- predictors[train_index, ]
+y_train <- response[train_index]
+x_test <- predictors[-train_index, ]
+y_test <- response[-train_index]
+
+
+# Define a sequence of alpha values (from 0 to 1)
+alpha_values <- seq(0, 1, by = 0.1)
+
+# Define a sequence of lambda values (adjust as needed)
+lambda_values <- 10^seq(3, -3, by = -0.1)
+
+# Create the tuning grid
+tune_grid <- expand.grid(alpha = alpha_values, lambda = lambda_values)
+
+# Set up cross-validation
+cv_control <- trainControl(method = "cv", number = 10)
+
+# Train the Elastic Net model
+elastic_net_model <- train(
+  x = x_train,  # Predictor variables
+  y = y_train,  # Response variable
+  method = "glmnet",
+  trControl = cv_control,
+  tuneGrid = tune_grid
+)
+
+# Extract the best alpha and lambda values
+best_alpha <- elastic_net_model$bestTune$alpha
+best_lambda <- elastic_net_model$bestTune$lambda
+
+# Make predictions on the test set
+predictions <- predict(elastic_net_model, newdata = x_test)
+
+# Calculate Mean Squared Error (MSE)
+mse_elastic <- mean((predictions - y_test)^2)
+cat("Mean Squared Error on Test Set:", round(mse_elastic, 2), "\n")
+
+# Extract coefficients as a matrix
+coef_matrix <- as.matrix(coef(elastic_net_model$finalModel, s = best_lambda))
+
+# Convert the matrix to a data frame
+coef_df <- data.frame(
+  Feature = rownames(coef_matrix),
+  Coefficient = coef_matrix[, 1],
+  row.names = NULL
+)
+
+# Filter out features with zero coefficients
+non_zero_coef_df <- subset(coef_df, Coefficient != 0)
+
+# Display the table using kable
+non_zero_coef_df %>%
+  kable(
+    caption = "Non-Zero Coefficients from Elastic Net Regression Model",
+    col.names = c("Feature", "Coefficient"),
+    align = "l"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+
+```
+
+Table 4. The table presents the coefficients from the Elastic Net regression model. Elastic Net combines both Lasso and Ridge penalties, enabling it to shrink coefficients like Ridge while also setting some to zero like Lasso. This allows for variable selection and multicollinearity handling in a balanced way.
+
+
+## SVM
+
+
+Support Vector Regression (SVR) is a machine learning technique adept at predicting continuous outcomes by identifying a function that deviates from actual target values by no more than a specified margin, ε, while maintaining model simplicity.  In the context of the churn.pca dataset, where Customer.Value serves as the response variable, SVR can be employed to forecast customer value based on various predictor variables. By leveraging the principles of Support Vector Machines, SVR effectively manages both linear and non-linear relationships within the data, making it a robust choice for modeling complex patterns associated with customer value prediction.
+
+```{r}
+
+churn.pca$Call.Failure <- as.numeric(as.character(churn.pca$Call.Failure))
+churn.pca$Distinct.Called.Numbers <- as.numeric(as.character(churn.pca$Distinct.Called.Numbers))
+churn.pca$Age <- as.numeric(as.character(churn.pca$Age))
+churn.pca$Usage.Frequency.PC <- as.numeric(as.character(churn.pca$Usage.Frequency.PC ))
+churn.pca$Subscription.Length.PC <- as.numeric(as.character(churn.pca$Subscription.Length.PC))
+churn.pca$Frequency.SMS.PC <- as.numeric(as.character(churn.pca$Frequency.SMS.PC))
+
+
+is.numeric(y_train)
+y_train <- as.numeric(y_train)
+
+# Step 1: Randomly select 1,000 observations from churn.pca
+set.seed(65)  # For reproducibility
+churn_sample <- churn.pca %>% sample_n(400)
+
+# Step 2: Define predictor variables (X) and response variable (y)
+
+X <- churn_sample %>% select(Call.Failure, Distinct.Called.Numbers, Age, Usage.Frequency.PC, Subscription.Length.PC, Frequency.SMS.PC)
+y <- churn_sample$Customer.Value
+
+# Reduce training data to 70% and testing 30%
+set.seed(65)
+train_indices <- createDataPartition(y, p = 0.7, list = FALSE)
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+y_train <- as.numeric(y_train)
+
+# Ensure all predictors are numeric
+X_train <- data.frame(lapply(X_train, function(x) if(is.factor(x)) as.numeric(as.factor(x)) else x))
+X_test <- data.frame(lapply(X_test, function(x) if(is.factor(x)) as.numeric(as.factor(x)) else x))
+
+
+# Enable parallel computing to speed up training
+cl <- makeCluster(detectCores() - 1)  
+registerDoParallel(cl)
+
+# Reduce hyperparameter tuning space for RBF kernel
+tune.RBF <- tune(svm, train.x = X_train, train.y = y_train, 
+                 ranges = list(epsilon = seq(0.01, 0.2, by = 0.05), 
+                               cost = c(1, 10, 100), 
+                               gamma = c(0.01, 0.1, 1)), 
+                 tunecontrol = tune.control(sampling = "cross", cross = 3))
+
+
+# Display the best parameters for RBF
+print(tune.RBF$best.parameters)
+
+# Train the final model using the best parameters
+final.RBF <- svm(X_train, y_train, 
+                 type = "eps-regression",  
+                 kernel = "radial", 
+                 epsilon = tune.RBF$best.parameters$epsilon, 
+                 cost = tune.RBF$best.parameters$cost, 
+                 gamma = tune.RBF$best.parameters$gamma)
+
+# Make predictions on the test set
+pred.RBF <- predict(final.RBF, X_test)
+length(pred.RBF) 
+
+
+
+# Evaluate
+rmse_rbf <- sqrt(mean((pred.RBF - y_test)^2))
+print(paste("RMSE for RBF SVM:", round(rmse_rbf, 2)))
+
+# Perform grid search for hyperparameter tuning (Linear Kernel)
+tune.lin <- tune(svm, train.x = X_train, train.y = y_train, 
+                 ranges = list(epsilon = seq(0.1, 0.5, 0.1), 
+                               cost = c(1, 10, 100)), 
+                 tunecontrol = tune.control(sampling = "cross", cross = 3))
+
+# Display the best parameters for Linear Kernel
+print(tune.lin$best.parameters)
+
+# Train the final model using the best parameters
+y_train <- as.factor(y_train)
+
+final.lin <- svm(X_train, y_train, 
+                 type = "C-classification",  
+                 kernel = "linear", 
+                 cost = tune.lin$best.parameters$cost)
+
+# Make predictions on the test set
+pred.lin <- predict(final.lin, X_test)
+
+
+```
+Table 5. The table shows the results of the SVM models with Radial Basis Function (RBF) and Linear kernels, optimized using grid search and cross-validation. The RMSE is reported for the RBF SVM model, indicating its predictive accuracy.
+
+
+
+## Comparison of Regularized Regression Models and SVM
+
+This analysis compares the performance of regularized regression models (Lasso, Ridge, and Elastic Net) with Support Vector Machine (SVM) regression, focusing on their ability to minimize the Mean Squared Error (MSE). Regularized models apply penalty terms to the loss function to prevent overfitting by shrinking or eliminating irrelevant coefficients. In contrast, SVM uses a hyperplane to maximize the margin between data points in high-dimensional space, with an additional penalty on misclassification or prediction errors. By evaluating the MSE of each model, the goal is to determine which approach delivers the most accurate predictions for the given data, considering the trade-offs between model complexity and generalization ability.
+
+```{r}
+
+
+# MSE Lasso
+#cat("MSE Lasso:", round(mse_lasso, 2), "\n")
+
+# MSE Ridge
+#cat("MSE Ridge:", round(mse_ridge, 2), "\n")
+
+# MSE Elastic Net
+#cat("MSE Elastic Net:", round(mse_elastic, 2), "\n")
+
+# MSE SVM
+#print(paste("MSE for RBF SVM:", rmse_rbf))
+
+mse_results <- data.frame(
+  Model = c("Lasso", "Ridge", "Elastic Net", "SVM (RBF)"),
+  MSE = c(mse_lasso, mse_ridge, mse_elastic, rmse_rbf)
+)
+
+kable(mse_results, col.names = c("Model", "Mean Squared Error"))
+```
+
+Table 6. the MSE for SVM is significantly smaller than Lasso, Ridge, and Elastic Net. 
+
+
+
+
+# LOGISTIC REGRESSION 
+
+Logistic regression is a widely used classification technique for predicting binary outcomes, making it ideal for analyzing customer churn in this dataset. This analysis explores Ridge, Lasso, and Elastic Net logistic regression, which apply different regularization techniques to improve model performance and prevent overfitting. Ridge regression (L2 penalty) shrinks coefficients toward zero without eliminating them, Lasso regression (L1 penalty) performs feature selection by setting some coefficients to zero, and Elastic Net (a combination of L1 and L2 penalties) balances both approaches. Additionally, Support Vector Machine (SVM) is included as a powerful classification model that finds an optimal decision boundary to separate churners from non-churners. Comparing these models helps determine the most effective method for predicting churn and identifying key customer retention factors.
+
+## Regularized Linear Regression
+
+### Lasso
+
+
+Lasso (Least Absolute Shrinkage and Selection Operator) is a regularization technique commonly used in logistic regression to prevent overfitting by adding an L1 penalty to the loss function. This penalty forces some coefficients to be exactly zero, effectively performing feature selection and simplifying the model. One of the strengths of Lasso is its ability to identify and eliminate irrelevant predictors, making the model more interpretable and efficient. However, a potential weakness is that Lasso can perform poorly when there are highly correlated predictors, as it may arbitrarily select one and ignore the others, leading to instability in the model’s predictions.
+
+```{r}
+# Prepare feature matrix and target variable
+X <- model.matrix(Churn ~ . , data = churn.pca)[,-1]  # Remove intercept column
+y <- churn.pca$Churn  # Binary target variable (0 or 1)
+
+# Split the data into training and testing sets
+set.seed(42)  # For reproducibility
+train_indices <- sample(1:nrow(X), size = 0.8 * nrow(X))
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+
+# train lasso
+
+lasso_model <- glmnet(X_train, y_train, family = "binomial", alpha = 1)
+
+# cross validation
+
+cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
+lambda_lasso <- cv_lasso$lambda.min  # Best lambda
+
+# train with optimal lambda
+
+lasso_model_opt <- glmnet(X_train, y_train, 
+                          family = "binomial", 
+                          alpha = 1, 
+                          lambda = lambda_lasso)
+
+# Extract model coefficients
+lasso_coefs <- tidy(lasso_model_opt)  # Extract coefficients as tidy format
+
+# Print model coefficients using kable
+kable(lasso_coefs, caption = "Lasso Regression Coefficients")
+
+# make predictions
+
+# Predict probabilities
+pred_probs <- predict(lasso_model_opt, X_test, type = "response")
+
+# Convert probabilities to binary predictions (threshold = 0.5)
+pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
+
+
+
+
+```
+
+Table 7. Lasso Regression Coefficients.
+
+### Ridge 
+
+Ridge regression is a regularization technique used in logistic regression that adds an L2 penalty to the loss function, shrinking the coefficients toward zero but not eliminating them entirely. This method helps to prevent overfitting by reducing the impact of less important predictors. One of the strengths of Ridge regression is its ability to handle multicollinearity by distributing the effect across correlated predictors, which can improve model stability. However, Ridge does not perform feature selection, meaning that all predictors remain in the model, which can make the model less interpretable compared to Lasso.
+
+```{r}
+
+
+X <- model.matrix(Churn ~ . , data = churn.pca)[,-1]  # Remove intercept column
+y <- churn$Churn  # Binary target variable (0 or 1)
+
+# Split the data into training and testing sets
+set.seed(42)  # For reproducibility
+train_indices <- sample(1:nrow(X), size = 0.8 * nrow(X))
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+# train
+
+ridge_model <- glmnet(X_train, y_train, family = "binomial", alpha = 0)
+
+
+# cross validation
+
+cv_ridge <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+lambda_ridge <- cv_ridge$lambda.min  # Best lambda
+
+
+# train with optimal lambda
+
+ridge_model_opt <- glmnet(X_train, y_train, 
+                          family = "binomial", 
+                          alpha = 0, 
+                          lambda = lambda_ridge)
+
+# Extract model coefficients
+ridge_coefs <- tidy(ridge_model_opt)  # Extract coefficients as tidy format
+
+# Print model coefficients using kable
+kable(ridge_coefs, caption = "Ridge Regression Coefficients")
+
+# Predict probabilities
+pred_probs <- predict(ridge_model_opt, X_test, type = "response")
+
+# Convert probabilities to binary predictions (threshold = 0.5)
+pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
+
+
+
+```
+
+Table 8. Ridge Regression Coefficients.
+
+
+### Elastic Net 
+
+Elastic Net is a regularization technique that combines both L1 (Lasso) and L2 (Ridge) penalties, offering a balance between feature selection and coefficient shrinkage. It is particularly useful when there are multiple correlated predictors, as it can select groups of variables together while also providing shrinkage to prevent overfitting. The strength of Elastic Net lies in its flexibility, as it can outperform Lasso and Ridge when the data has a mix of highly correlated and independent predictors. However, a potential weakness is the need to tune two hyperparameters (alpha and lambda), which can make the model more complex to optimize.
+
+
+```{r}
+
+# Prepare feature matrix and target variable
+X <- model.matrix(Churn ~ . , data = churn.pca)[,-1]  # Remove intercept column
+y <- churn.pca$Churn  # Binary target variable (0 or 1)
+
+# Split the data into training and testing sets
+set.seed(42)  # For reproducibility
+train_indices <- sample(1:nrow(X), size = 0.8 * nrow(X))
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+# train
+
+elastic_net_model <- glmnet(X_train, y_train, 
+                            family = "binomial", 
+                            alpha = 0.5)  # Adjust alpha as needed
+
+# cross validation
+
+cv_elastic <- cv.glmnet(X_train, y_train, 
+                         family = "binomial", 
+                         alpha = 0.5)  # Keep alpha consistent
+lambda_elastic <- cv_elastic$lambda.min  # Best lambda
+
+# train with optimal lambda
+
+elastic_net_model_opt <- glmnet(X_train, y_train, 
+                                family = "binomial", 
+                                alpha = 0.5, 
+                                lambda = lambda_elastic)
+
+# Extract model coefficients
+elastic_net_coefs <- tidy(elastic_net_model_opt)  # Extract coefficients as tidy format
+
+# Print model coefficients using kable
+kable(elastic_net_coefs, caption = "Elastic Net Regression Coefficients")
+
+
+# Predict probabilities
+pred_probs <- predict(elastic_net_model_opt, X_test, type = "response")
+
+# Convert probabilities to binary predictions (threshold = 0.5)
+pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
+
+```
+
+Table 9. Elastic Net Regression Coefficients. 
+
+
+## SVM classification
+
+
+Support Vector Machines (SVM) are effective for classifying complex datasets, especially in high-dimensional spaces. Applying SVM to the churn.pca dataset involves using Churn as the response variable to identify customers likely to discontinue a service. The churn.pca dataset has undergone Principal Component Analysis (PCA), a technique that transforms original correlated features into a set of uncorrelated components, reducing dimensionality while retaining essential information. This transformation addresses issues like multicollinearity and enhances computational efficiency. By integrating SVM with PCA-transformed data, the classification model can effectively handle reduced features, potentially improving predictive accuracy in customer churn analysis. This approach leverages SVM’s capability to manage complex, high-dimensional data structures, making it suitable for churn prediction tasks
+
+```{r}
+
+# Define feature matrix (X) and target variable (y)
+X <- churn.pca[, c("Call.Failure", "Distinct.Called.Numbers", "Age", 
+                      "Usage.Frequency.PC", "Subscription.Length.PC", "Frequency.SMS.PC")]
+y <- churn.pca$Churn  # Response variable (binary classification)
+
+# Split data into training and testing sets
+set.seed(42)  # Ensure reproducibility
+train_indices <- createDataPartition(y, p = 0.8, list = FALSE)
+
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+
+# TUNING
+
+# Define cross-validation control
+tune_control <- tune.control(sampling = "cross", cross = 5)  # 5-fold CV
+
+# Perform grid search for hyperparameter tuning (RBF Kernel)
+tune_result <- tune(svm, train.x = X_train, train.y = y_train, 
+                    kernel = "radial",
+                    ranges = list(cost = c(1, 10, 100), 
+                                  gamma = c(0.01, 0.1, 1)),  # Adjust grid size if needed
+                    tunecontrol = tune_control)
+
+# Display best hyperparameters
+print(tune_result$best.parameters)
+
+# TRAIN MODEL
+
+# Extract best parameters
+best_cost <- tune_result$best.parameters$cost
+best_gamma <- tune_result$best.parameters$gamma
+
+# Train final SVM model
+final_svm <- svm(X_train, y_train, 
+                 kernel = "radial", 
+                 cost = best_cost, 
+                 gamma = best_gamma)
+
+# Train the final SVM model using the best hyperparameters
+svm_model <- svm(X_train, y_train, 
+                 type = "C-classification",  
+                 kernel = "radial", 
+                 cost = best_cost, 
+                 gamma = best_gamma)
+
+# Make predictions
+svm_predictions <- predict(svm_model, X_test)
+
+# MAKE PREDICTIONS
+
+# Predict on the test set
+y_pred <- predict(final_svm, X_test)
+
+
+# Evaluate SVM performance
+svm_cm <- confusionMatrix(svm_predictions, y_test)
+svm_accuracy <- svm_cm$overall["Accuracy"]
+
+# Print accuracy for comparison
+print(paste("SVM Accuracy:", round(svm_accuracy, 4)))
+
+# Add SVM model results to comparison table
+model_comparison <- data.frame(
+  Model = c("SVM", "Other Model 1", "Other Model 2"),  # Replace with actual models
+  Accuracy = c(svm_accuracy, 0.85, 0.88)  # Replace with actual accuracies
+)
+
+# Display comparison
+print(model_comparison)
+
+
+```
+
+Table 10. Best hyperparameters selected for the SVM model using radial basis function (RBF) kernel and cross-validation. Confusion matrix and accuracy metrics for the SVM classifier evaluated on the test set. Comparison of classification accuracy across SVM and other predictive models.
+
+
+## Comparison of Regularized and SVM Classification
+
+To evaluate the performance of the different classification models, Lasso, Ridge, Elastic Net, and SVM, ROC curves and AUC scores were used as the primary metrics. ROC curves illustrate the trade-off between sensitivity and specificity across different thresholds, while the AUC provides a single value representing the overall ability of the model to discriminate between churned and non-churned customers. This comparison allows for a clear assessment of which model provides the best predictive accuracy and robustness in identifying customer churn.
+
+```{r}
+
+# Prepare feature matrix and target variable
+X <- model.matrix(Churn ~ . , data = churn.pca)[,-1]  # Remove intercept column
+y <- churn.pca$Churn  # Binary target variable (0 or 1)
+
+# Split the data into training and testing sets
+set.seed(42)
+train_indices <- sample(1:nrow(X), size = 0.8 * nrow(X))
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+cv_ridge <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+lambda_ridge <- cv_ridge$lambda.min
+ridge_model <- glmnet(X_train, y_train, family = "binomial", alpha = 0, lambda = lambda_ridge)
+
+cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
+lambda_lasso <- cv_lasso$lambda.min
+lasso_model <- glmnet(X_train, y_train, family = "binomial", alpha = 1, lambda = lambda_lasso)
+
+cv_elastic <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 0.5)
+lambda_elastic <- cv_elastic$lambda.min
+elastic_model <- glmnet(X_train, y_train, family = "binomial", alpha = 0.5, lambda = lambda_elastic)
+
+# Predict probabilities (for ROC curve)
+ridge_probs <- predict(ridge_model, X_test, type = "response")
+lasso_probs <- predict(lasso_model, X_test, type = "response")
+elastic_probs <- predict(elastic_model, X_test, type = "response")
+
+
+# Compute ROC curves
+roc_ridge <- roc(y_test, ridge_probs)
+roc_lasso <- roc(y_test, lasso_probs)
+roc_elastic <- roc(y_test, elastic_probs)
+
+# Compute AUC values
+auc_ridge <- auc(roc_ridge)
+auc_lasso <- auc(roc_lasso)
+auc_elastic <- auc(roc_elastic)
+
+# Print AUC values
+print(paste("AUC Ridge: ", round(auc_ridge, 4)))
+print(paste("AUC Lasso: ", round(auc_lasso, 4)))
+print(paste("AUC Elastic Net: ", round(auc_elastic, 4)))
+
+
+
+# Train SVM model with optimal hyperparameters (from previous tuning)
+svm_model <- svm(X_train, y_train, 
+                 type = "C-classification",  
+                 kernel = "radial", 
+                 cost = best_cost, 
+                 gamma = best_gamma,
+                 probability = TRUE)  # Enable probability predictions
+
+# Make predictions with probability scores
+svm_prob <- attr(predict(svm_model, X_test, probability = TRUE), "probabilities")[, 2]
+
+# Compute ROC curve for SVM
+roc_svm <- roc(y_test, svm_prob)
+
+# Compute AUC for SVM
+auc_svm <- auc(roc_svm)
+
+# Plot ROC curves (including SVM)
+ggplot() +
+  geom_line(data = data.frame(fpr = rev(roc_ridge$specificities), tpr = rev(roc_ridge$sensitivities)), 
+            aes(x = fpr, y = tpr), color = "blue", size = 1) +
+  geom_line(data = data.frame(fpr = rev(roc_lasso$specificities), tpr = rev(roc_lasso$sensitivities)), 
+            aes(x = fpr, y = tpr), color = "darkgreen", size = 1) +
+  geom_line(data = data.frame(fpr = rev(roc_elastic$specificities), tpr = rev(roc_elastic$sensitivities)), 
+            aes(x = fpr, y = tpr), color = "purple", size = 1) +
+  geom_line(data = data.frame(fpr = rev(roc_svm$specificities), tpr = rev(roc_svm$sensitivities)), 
+            aes(x = fpr, y = tpr), color = "orange", size = 1) +  # Add SVM in green
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") +
+  labs(title = "ROC Curve Comparison", x = "False Positive Rate (1 - Specificity)", y = "True Positive Rate (Sensitivity)") +
+  theme_minimal() +
+  annotate("text", x = 0.6, y = 0.4, label = paste("AUC Ridge:", round(auc_ridge, 4)), color = "blue") +
+  annotate("text", x = 0.6, y = 0.35, label = paste("AUC Lasso:", round(auc_lasso, 4)), color = "darkgreen") +
+  annotate("text", x = 0.6, y = 0.3, label = paste("AUC Elastic Net:", round(auc_elastic, 4)), color = "purple") +
+  annotate("text", x = 0.6, y = 0.25, label = paste("AUC SVM:", round(auc_svm, 4)), color = "orange")  # Add SVM AUC
+
+
+
+```
+
+Figure J. ROC and AUC for Ridge, Lasso, Elastic Net, and SVM classification. 
+
+
+In the process of predicting customer churn, the application of Ridge, Lasso, Elastic Net, and Support Vector Machine (SVM) classifiers yielded comparable results, with Lasso achieving the highest Area Under the Curve (AUC). This similarity in performance suggests that the dataset’s features are well-captured by these linear models, and the additional complexity introduced by SVM may not provide significant advantages in this context. Notably, Lasso’s ability to perform feature selection by constraining some coefficients to zero indicates that certain variables may be less influential in predicting churn. To enhance predictive accuracy, it is recommended to focus on refining feature engineering processes, exploring non-linear relationships, and considering ensemble methods or boosting techniques, which have demonstrated improved performance in customer churn prediction tasks . Additionally, incorporating domain-specific knowledge to identify and include relevant features could further improve model effectiveness.
+
+
+## Optimal Cutoff
+
+
+In the analysis of customer churn prediction models, determining optimal cutoff points for Ridge, Lasso, and Elastic Net classifiers is crucial for balancing sensitivity and specificity. These cutoffs directly influence the classification threshold, impacting the trade-off between false positives and false negatives. Fine-tuning these thresholds ensures that the models align with specific business objectives, such as minimizing customer retention costs or maximizing the identification of potential churners.
+
+```{r}
+#Optimal cutoff Ridge
+
+# Get performance metrics at different probability thresholds
+roc_ridge <- roc(y_test, ridge_probs)
+
+# Compute Youden’s J statistic
+optimal_idx_ridge <- which.max(roc_ridge$sensitivities + roc_ridge$specificities - 1)
+optimal_cutoff_ridge <- roc_ridge$thresholds[optimal_idx_ridge]
+
+# Print optimal cutoff
+print(paste("Optimal Cutoff for Ridge:", round(optimal_cutoff_ridge, 4)))
+
+
+# Optimal Cutoff Lasso
+
+roc_lasso <- roc(y_test, lasso_probs)
+optimal_idx_lasso <- which.max(roc_lasso$sensitivities + roc_lasso$specificities - 1)
+optimal_cutoff_lasso <- roc_lasso$thresholds[optimal_idx_lasso]
+
+print(paste("Optimal Cutoff for Lasso:", round(optimal_cutoff_lasso, 4)))
+
+# optimal cutoff elastic
+
+roc_elastic <- roc(y_test, elastic_probs)
+optimal_idx_elastic <- which.max(roc_elastic$sensitivities + roc_elastic$specificities - 1)
+optimal_cutoff_elastic <- roc_elastic$thresholds[optimal_idx_elastic]
+
+print(paste("Optimal Cutoff for Elastic Net:", round(optimal_cutoff_elastic, 4)))
+
+```
+
+Table 11. Optimal cutoffs.
+
+
+Given that Lasso regression not only provides robust predictive performance but also performs feature selection by constraining some coefficients to zero, it offers the dual benefit of simplifying the model and highlighting the most influential predictors. Therefore, it is recommended to focus on Lasso’s selected features to gain deeper insights into customer behavior and to tailor retention strategies effectively. Additionally, regularly revisiting and adjusting these cutoffs in response to evolving business priorities and market conditions will help maintain the relevance and accuracy of the churn prediction models.
+
+
+# CONCLUSION
+
+
+This analysis of customer behavior incorporated Exploratory Data Analysis (EDA) and advanced feature engineering techniques, including Principal Component Analysis (PCA), to enhance the understanding of the dataset’s structure. For predicting customer value, four regression methods—Lasso, Ridge, Elastic Net, and Support Vector Machine (SVM)—were evaluated, with SVM achieving the lowest Mean Squared Error (MSE), indicating superior predictive accuracy. In turn, SVM is recommended for predicting Customer Value.
+
+In the subsequent churn prediction phase, logistic regression variants (Lasso, Ridge, Elastic Net) and SVM were applied, with Lasso exhibiting the highest Area Under the Curve (AUC) slightly more than other methods, signifying its effectiveness in distinguishing between churners and non-churners. Determining optimal cutoff values further refined the models’ precision. These findings suggest that Ridge regression is preferable for customer value prediction due to its ability to handle multicollinearity, while Lasso’s feature selection capability makes it more suitable for churn prediction. Therefore, leveraging Ridge regression for forecasting customer value and employing Lasso regression for identifying potential churners is recommended. Additionally, integrating clustering techniques can provide deeper insights into customer segments, enabling more targeted retention strategies. Regularly updating models with new data and continuously validating cutoff thresholds will further enhance predictive performance and business decision-making.
+
+
